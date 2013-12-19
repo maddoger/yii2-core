@@ -1,0 +1,22 @@
+{
+	"name": "rusporting/yii2-core",
+	"type": "yii2-extension",
+	"description": "Core extension for Yii2.",
+	"authors": [
+        {
+            "name": "Vitaliy Syrchikov",
+            "email": "maddoger@gmail.com"
+        }
+    ],
+	"autoload": {
+        "psr-0": {
+            "rusporting\\core\\": ""
+        }
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0",
+        "yiisoft/yii2": "*"
+    },
+	"target-dir": "rusporting/core"
+}
