@@ -10,7 +10,7 @@
     ],
 	"autoload": {
         "psr-0": {
-            "rusporting\\core\\": ""
+            "rusporting\\": ""
         }
     },
     "minimum-stability": "dev",
@@ -18,5 +18,5 @@
         "php": ">=5.3.0",
         "yiisoft/yii2": "*"
     },
-	"target-dir": "rusporting/core"
+	"target-dir": "rusporting"
 }
