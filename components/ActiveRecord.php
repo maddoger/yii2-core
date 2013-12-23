@@ -1,14 +1,32 @@
 <?php
+/**
+ * @author Vitaliy Syrchikov <maddoger@gmail.com>
+ * @link http://syrchikov.name/
+ * @copyright Copyright (c) 2013-2014 Rusporting Inc.
+ */
 
 namespace rusporting\core\components;
 
-use \yii\db\ActiveRecord;
-use \yii\base\Event;
+use yii\db\ActiveRecord as BaseActiveRecord;
+use yii\base\Event;
+use yii\helpers\Inflector;
+use yii\helpers\StringHelper;
 
-class CoreActiveRecord extends ActiveRecord
+class ActiveRecord extends BaseActiveRecord
 {
+	/**
+	 * Declares the name of the database table associated with this AR class.
+	 * By default this method returns the class name as the table name by calling [[Inflector::camel2id()]]
+	 * with prefix from database connection. For example, 'Customer' becomes 'tbl_customer', and 'OrderItem' becomes
+	 * 'tbl_order_item'. You may override this method if the table is not named after this convention.
+	 * @return string the table name
+	 */
+	public static function tableName()
+	{
+		return static::getDb()->tablePrefix . Inflector::camel2id(StringHelper::basename(get_called_class()), '_');
+	}
 
-	public function init(){
+	/*public function init(){
 		Event::on(ActiveRecord::className(), self::EVENT_AFTER_FIND, function ($event) {
 			$class = get_called_class();
 			\Yii::trace($class . ' is finded.');
@@ -44,6 +62,6 @@ class CoreActiveRecord extends ActiveRecord
 				$this->onAfterInsert();
 			}
 		});
-	}
+	}*/
 
 }
