@@ -1,5 +1,5 @@
 <?php
-namespace app\extensions\assetparser;
+namespace rusporting\core\assetconverter;
 use Yii;
 
 class Sass extends Parser

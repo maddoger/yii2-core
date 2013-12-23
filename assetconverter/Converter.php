@@ -30,7 +30,7 @@ class Converter extends Component implements AssetConverterInterface
             'options' => array() // optional options
         ),*/
         'less' => array( // file extension to parse
-            'class' => '@rusporting\core\assetconverter\Less',
+            'class' => 'rusporting\core\assetconverter\Less',
             'output' => 'css', // parsed output file type
             'options' => array(
                 'auto' => true // optional options
