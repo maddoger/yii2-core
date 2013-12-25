@@ -13,7 +13,19 @@ class Module extends BaseModule
 	 * Translation category for Yii::t function
 	 * @var string
 	 */
-	public static $translationCategory = null;
+	public $translationCategory = null;
+
+	/**
+	 * Number for sorting in backend navigation
+	 * @var integer
+	 */
+	public $backendSortNumber = null;
+
+	/**
+	 * Backend index url
+	 * @var string
+	 */
+	public $backendIndex = null;
 
 	/**
 	 * @return string|null Module name
@@ -45,6 +57,28 @@ class Module extends BaseModule
 	public function getIcon()
 	{
 		return null;
+	}
+
+	/**
+	 * FontAwesome icon class without fa-
+	 * @return string|null Icon
+	 */
+	public function getFaIcon()
+	{
+		return null;
+	}
+
+	/**
+	 * FontAwesome icon class
+	 * @return string|null Icon
+	 */
+	public function getBackendIndex()
+	{
+		if ($this->backendIndex !== null) {
+			return $this->id .'/'.$this->backendIndex;
+		} else {
+			return $this->id . '/'.$this->defaultRoute . '/index';
+		}
 	}
 
 	/**
@@ -108,18 +142,16 @@ class Module extends BaseModule
 	 */
 	public function getRights()
 	{
+		if ($this->hasBackend())
 		return null;
 	}
 
 	/**
-	 * Translate message from module dictionary
-	 * @param $message
-	 * @param null $params
-	 * @param null $language
-	 * @return string
+	 * Returns navigation items for backend
+	 * @return array
 	 */
-	public static function t($message, $params=null, $language=null)
+	public function getBackendNavigation()
 	{
-		return Yii::t(static::$translationCategory, $message, $params, $language);
+		return null;
 	}
 }
