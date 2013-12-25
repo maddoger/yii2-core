@@ -5,7 +5,7 @@
  * @copyright Copyright (c) 2013-2014 Rusporting Inc.
  */
 
-namespace rusporting\core\components;
+namespace rusporting\core;
 
 use yii\db\ActiveRecord as BaseActiveRecord;
 use yii\base\Event;

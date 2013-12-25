@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core\components;
+namespace rusporting\core;
 
 
 class BackendController extends FrontendController

@@ -2,13 +2,14 @@
 
 //Core module class
 
-namespace rusporting\core\components;
+namespace rusporting\core;
 
 use Yii;
 use yii\base\Module as BaseModule;
 
 class Module extends BaseModule
 {
+
 	/**
 	 * Translation category for Yii::t function
 	 * @var string
@@ -26,6 +27,57 @@ class Module extends BaseModule
 	 * @var string
 	 */
 	public $backendIndex = null;
+
+	/**
+	 * Is backend enabled?
+	 * @var bool
+	 */
+	public $backendEnabled = true;
+
+	/**
+	 * @var bool Has it frontend? Default is true.
+	 */
+	protected $hasFrontend = true;
+
+	/**
+	 * @var bool Has it backend? Default is false.
+	 */
+	protected $hasBackend = false;
+
+	/**
+	 * Custom backend class
+	 * @var mixed
+	 */
+	public $backendClass = null;
+
+
+	public function init()
+	{
+		parent::init();
+		//Register backend submodule
+		if ($this->hasBackend && $this->backendEnabled) {
+
+			if (!$this->backendClass) {
+				$class = get_class($this);
+				if (($pos = strrpos($class, '\\')) !== false) {
+					$this->backendClass = substr($class, 0, $pos) .'\\modules\\backend\\BackendModule';
+				}
+			}
+
+			$this->setModule('backend', ['class' => $this->backendClass]);
+		}
+	}
+
+	/**
+	 * Returns backend module
+	 *
+	 * @param bool $load
+	 * @return null|BaseModule
+	 */
+	public function getBackendModule($load=true)
+	{
+		return $this->getModule($this->backendClass, $load);
+	}
 
 	/**
 	 * @return string|null Module name
@@ -100,11 +152,13 @@ class Module extends BaseModule
 	}
 
 	/**
+	 * Has module backend?
+	 * Module must have submodule backend
 	 * @return string|null Module has backend
 	 */
 	public function hasBackend()
 	{
-		return false;
+		return $this->hasBackend && $this->backendEnabled && ($this->hasModule('backend'));
 	}
 
 	/**

@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core\components;
+namespace rusporting\core;
 
 use yii\web\Controller;
 use Yii;
