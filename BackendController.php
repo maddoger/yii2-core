@@ -22,4 +22,17 @@ class BackendController extends FrontendController
 			],
 		];
 	}
+
+	/**
+	 * @return array
+	 */
+	public function getDefaultRenderParams()
+	{
+		$params = parent::getDefaultRenderParams();
+
+		$params['frontend'] = false;
+		$params['backend'] = true;
+
+		return $params;
+	}
 }

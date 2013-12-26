@@ -12,44 +12,42 @@ class Module extends BaseModule
 
 	/**
 	 * Translation category for Yii::t function
+	 *
 	 * @var string
 	 */
 	public $translationCategory = null;
-
 	/**
 	 * Number for sorting in backend navigation
+	 *
 	 * @var integer
 	 */
 	public $backendSortNumber = null;
-
 	/**
 	 * Backend index url
+	 *
 	 * @var string
 	 */
 	public $backendIndex = null;
-
 	/**
 	 * Is backend enabled?
+	 *
 	 * @var bool
 	 */
 	public $backendEnabled = true;
-
+	/**
+	 * Custom backend class
+	 *
+	 * @var mixed
+	 */
+	public $backendClass = null;
 	/**
 	 * @var bool Has it frontend? Default is true.
 	 */
 	protected $hasFrontend = true;
-
 	/**
 	 * @var bool Has it backend? Default is false.
 	 */
 	protected $hasBackend = false;
-
-	/**
-	 * Custom backend class
-	 * @var mixed
-	 */
-	public $backendClass = null;
-
 
 	public function init()
 	{
@@ -60,7 +58,7 @@ class Module extends BaseModule
 			if (!$this->backendClass) {
 				$class = get_class($this);
 				if (($pos = strrpos($class, '\\')) !== false) {
-					$this->backendClass = substr($class, 0, $pos) .'\\modules\\backend\\BackendModule';
+					$this->backendClass = substr($class, 0, $pos) . '\\modules\\backend\\BackendModule';
 				}
 			}
 
@@ -83,7 +81,7 @@ class Module extends BaseModule
 	 * @param bool $load
 	 * @return null|BaseModule
 	 */
-	public function getBackendModule($load=true)
+	public function getBackendModule($load = true)
 	{
 		return $this->getModule($this->backendClass, $load);
 	}
@@ -122,6 +120,7 @@ class Module extends BaseModule
 
 	/**
 	 * FontAwesome icon class without fa-
+	 *
 	 * @return string|null Icon
 	 */
 	public function getFaIcon()
@@ -131,14 +130,15 @@ class Module extends BaseModule
 
 	/**
 	 * FontAwesome icon class
+	 *
 	 * @return string|null Icon
 	 */
 	public function getBackendIndex()
 	{
 		if ($this->backendIndex !== null) {
-			return $this->id .'/'.$this->backendIndex;
+			return $this->id . '/' . $this->backendIndex;
 		} else {
-			return $this->id . '/'.$this->defaultRoute . '/index';
+			return $this->id . '/' . $this->defaultRoute . '/index';
 		}
 	}
 
@@ -158,16 +158,6 @@ class Module extends BaseModule
 	public function hasFrontend()
 	{
 		return true;
-	}
-
-	/**
-	 * Has module backend?
-	 * Module must have submodule backend
-	 * @return string|null Module has backend
-	 */
-	public function hasBackend()
-	{
-		return $this->hasBackend && $this->backendEnabled && ($this->hasModule('backend'));
 	}
 
 	/**
@@ -196,13 +186,24 @@ class Module extends BaseModule
 	}
 
 	/**
+	 * Has module backend?
+	 * Module must have submodule backend
+	 *
+	 * @return string|null Module has backend
+	 */
+	public function hasBackend()
+	{
+		return $this->hasBackend && $this->backendEnabled && ($this->hasModule('backend'));
+	}
+
+	/**
 	 * Returns configuration view file name
 	 *
 	 * @return string|null
 	 */
 	public function getConfigurationView()
 	{
-		$path = $this->getViewPath(). DIRECTORY_SEPARATOR . 'config.php';
+		$path = $this->getViewPath() . DIRECTORY_SEPARATOR . 'config.php';
 		if (file_exists($path)) {
 			return $path;
 		} else {
@@ -227,16 +228,18 @@ class Module extends BaseModule
 
 	/**
 	 * Rules needed for administrator
+	 *
 	 * @return array|null
 	 */
-	public function getRights()
+	public function getRbacRoles()
 	{
 		if ($this->hasBackend())
-		return null;
+			return null;
 	}
 
 	/**
 	 * Returns navigation items for backend
+	 *
 	 * @return array
 	 */
 	public function getBackendNavigation()
