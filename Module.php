@@ -68,6 +68,15 @@ class Module extends BaseModule
 		}
 	}
 
+	public function getNameSpace()
+	{
+		$class = get_class($this);
+		if (($pos = strrpos($class, '\\')) !== false) {
+			return substr($class, 0, $pos);
+		}
+		return '';
+	}
+
 	/**
 	 * Returns backend module
 	 *
@@ -165,14 +174,40 @@ class Module extends BaseModule
 	 * Returns configuration model
 	 * Example:
 	 * [
-	 *    [ ['newsOnPage' => 'number'], 'Show news', 'URL for news showing by id' ],
+	 * 'pageTitle' => ['label' => Yii::t('rusporting/admin', 'Admin page title')],
+	 * 'brandName' => ['label' => Yii::t('rusporting/admin', 'Brand name')],
+	 * 'brandLogo' => ['type'=>'file', 'label' => Yii::t('rusporting/admin', 'Brand logo file')],
 	 * ]
 	 *
-	 * @return \yii\base\Model|null
+	 * @return DynamicModel
 	 */
-	public function getConfigurationForm()
+	public function getConfigurationModel()
 	{
-		return null;
+		$model = new DynamicModel();
+
+		if ($this->hasBackend()) {
+			$model->addAttributes([
+				'backendSortNumber' => ['label' => Yii::t('rusporting/admin', 'Sort in admin menu'),
+					'help' => Yii::t('rusporting/admin', 'Number for sorting menu of module in admin panel.')],
+			]);
+		}
+
+		return $model;
+	}
+
+	/**
+	 * Returns configuration view file name
+	 *
+	 * @return string|null
+	 */
+	public function getConfigurationView()
+	{
+		$path = $this->getViewPath(). DIRECTORY_SEPARATOR . 'config.php';
+		if (file_exists($path)) {
+			return $path;
+		} else {
+			return null;
+		}
 	}
 
 	/**

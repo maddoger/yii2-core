@@ -26,6 +26,16 @@ class ActiveRecord extends BaseActiveRecord
 		return static::getDb()->tablePrefix . Inflector::camel2id(StringHelper::basename(get_called_class()), '_');
 	}
 
+	/**
+	 * Attribute option for active form
+	 * @return array
+	 */
+	public function attributeOptions()
+	{
+		return [];
+	}
+
+
 	/*public function init(){
 		Event::on(ActiveRecord::className(), self::EVENT_AFTER_FIND, function ($event) {
 			$class = get_called_class();
