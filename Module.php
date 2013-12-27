@@ -178,7 +178,12 @@ class Module extends BaseModule
 		if ($this->hasBackend()) {
 			$model->addAttributes([
 				'backendSortNumber' => ['label' => Yii::t('rusporting/admin', 'Sort in admin menu'),
-					'help' => Yii::t('rusporting/admin', 'Number for sorting menu of module in admin panel.')],
+					'help' => Yii::t('rusporting/admin', 'Number for sorting menu of module in admin panel.'),
+					'rules' => [
+						['backendSortNumber', 'integer'],
+						['backendSortNumber', 'filter', 'filter'=>'intval'],
+					]
+				],
 			]);
 		}
 

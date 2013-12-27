@@ -7,10 +7,11 @@ use yii\helpers\ArrayHelper;
 
 class DynamicModel extends Model
 {
-	protected $_attributes;
+	protected $_attributes = [];
 
-	protected $_attributeParams;
+	protected $_attributeParams = [];
 
+	protected $_rules = [];
 
 	public function addAttribute($name, $params=[])
 	{
@@ -19,7 +20,9 @@ class DynamicModel extends Model
 		$params['type'] = $type;
 		$this->_attributes[$name] = $value;
 		$this->_attributeParams[$name] = $params;
-		$this->addAttributeRules($name, $type, $params);
+		if (isset($params['rules'])) {
+			$this->addAttributeRules($name, $type, $params['rules']);
+		}
 	}
 
 	public function addAttributes($attributes)
@@ -30,9 +33,16 @@ class DynamicModel extends Model
 		return $this;
 	}
 
-	public function addAttributeRules($name, $type, $params=[])
+	public function addAttributeRules($name, $type, $rules)
 	{
+		if ($rules) {
+			$this->_rules = ArrayHelper::merge($this->_rules, $rules);
+		}
+	}
 
+	public function rules()
+	{
+		return $this->_rules;
 	}
 
 	public function scenarios()
