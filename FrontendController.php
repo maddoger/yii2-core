@@ -20,9 +20,9 @@ class FrontendController extends Controller
 	 */
 	public $windowTitle = null;
 	/**
-	 * @var array Meta keywords
+	 * @var string Meta keywords
 	 */
-	public $metaKeywords = [];
+	public $metaKeywords = null;
 	/**
 	 * @var string Meta description
 	 */
@@ -107,8 +107,8 @@ class FrontendController extends Controller
 		 */
 		$view = $this->getView();
 		$view->title = $this->windowTitle;
-		if (count($this->metaKeywords) > 0) {
-			$view->registerMetaTag(['name' => 'keywords', 'content' => implode(', ', $this->metaKeywords)], 'keywords');
+		if ($this->metaKeywords !== null) {
+			$view->registerMetaTag(['name' => 'keywords', 'content' => $this->metaKeywords], 'keywords');
 		}
 		if ($this->metaDescription !== null) {
 			$view->registerMetaTag(['name' => 'description', 'content' => $this->metaDescription], 'description');
