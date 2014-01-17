@@ -63,8 +63,8 @@ class FrontendController extends Controller
 	 */
 	public function render($view, $params = [])
 	{
-		$params = array_merge($this->getDefaultRenderParams(), $params);
-		$this->setViewParams();
+		//$params = array_merge($this->getDefaultRenderParams(), $params);
+		$this->setViewParams(array_merge($this->getDefaultRenderParams(), $params));
 		$output = $this->getView()->render($view, $params, $this);
 		$layoutFile = $this->findLayoutFile($this->getView());
 		if ($layoutFile !== false) {
@@ -94,19 +94,25 @@ class FrontendController extends Controller
 		if ($this->windowTitle === null) {
 			$this->windowTitle = $this->title;
 		}
+		$params['title'] = $this->title;
+		$params['windowTitle'] = $this->windowTitle;
+		$params['metaKeywords'] = $this->metaKeywords;
+		$params['metaDescription'] = $this->metaDescription;
+		$params['metaAuthor'] = $this->metaAuthor;
+		$params['og'] = $this->og;
 		return $params;
 	}
 
 	/**
 	 * Set controller params (keywords, title) to View
 	 */
-	public function setViewParams()
+	public function setViewParams($params)
 	{
 		/**
 		 * @var \Yii\web\View $view
 		 */
 		$view = $this->getView();
-		$view->title = $this->windowTitle;
+		$view->title = $this->title;
 		if ($this->metaKeywords !== null) {
 			$view->registerMetaTag(['name' => 'keywords', 'content' => $this->metaKeywords], 'keywords');
 		}
@@ -122,7 +128,7 @@ class FrontendController extends Controller
 				$view->registerMetaTag(['name' => $key, 'content' => $value]);
 			}
 		}
-		$view->params['breadcrumbs'] = $this->breadcrumbs;
+		$view->params = array_merge($view->params, $params);
 	}
 
 	/**
@@ -130,8 +136,8 @@ class FrontendController extends Controller
 	 */
 	public function renderPartial($view, $params = [])
 	{
-		$params = array_merge($this->getDefaultRenderParams(), $params);
-		$this->setViewParams();
+		//$params = array_merge($this->getDefaultRenderParams(), $params);
+		$this->setViewParams(array_merge($this->getDefaultRenderParams(), $params));
 		return parent::render($view, $params);
 	}
 
@@ -140,8 +146,8 @@ class FrontendController extends Controller
 	 */
 	public function renderFile($file, $params = [])
 	{
-		$params = array_merge($this->getDefaultRenderParams(), $params);
-		$this->setViewParams();
+		//$params = array_merge($this->getDefaultRenderParams(), $params);
+		$this->setViewParams(array_merge($this->getDefaultRenderParams(), $params));
 		return parent::renderFile($file, $params);
 	}
 }
