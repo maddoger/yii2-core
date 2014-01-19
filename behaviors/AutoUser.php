@@ -32,12 +32,12 @@ class AutoUser extends Behavior
 	 * The array keys are the ActiveRecord events upon which the attributes are to be filled with timestamps,
 	 * and the array values are the corresponding attribute(s) to be updated. You can use a string to represent
 	 * a single attribute, or an array to represent a list of attributes.
-	 * The default setting is to update the `create_time` attribute upon AR insertion,
-	 * and update the `update_time` attribute upon AR updating.
+	 * The default setting is to update the `created_at` attribute upon AR insertion,
+	 * and update the `updated_at` attribute upon AR updating.
 	 */
 	public $attributes = [
-		ActiveRecord::EVENT_BEFORE_INSERT => 'create_user_id',
-		ActiveRecord::EVENT_BEFORE_UPDATE => 'update_user_id',
+		ActiveRecord::EVENT_BEFORE_INSERT => 'created_by_user_id',
+		ActiveRecord::EVENT_BEFORE_UPDATE => 'updated_by_user_id',
 	];
 
 	/**
