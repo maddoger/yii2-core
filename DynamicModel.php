@@ -118,7 +118,7 @@ class DynamicModel extends Model
 			$this->_attributes[$name] = $value;
 			return;
 		}
-		return parent::__set($name, $value);
+		parent::__set($name, $value);
 	}
 
 	/**
@@ -159,6 +159,6 @@ class DynamicModel extends Model
 			unset($this->_attributeParams[$name]);
 			return;
 		}
-		return parent::__unset($name);
+		parent::__unset($name);
 	}
 }
