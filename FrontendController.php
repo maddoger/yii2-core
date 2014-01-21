@@ -138,7 +138,7 @@ class FrontendController extends Controller
 	{
 		//$params = array_merge($this->getDefaultRenderParams(), $params);
 		$this->setViewParams(array_merge($this->getDefaultRenderParams(), $params));
-		return parent::render($view, $params);
+		return parent::renderPartial($view, $params);
 	}
 
 	/**
