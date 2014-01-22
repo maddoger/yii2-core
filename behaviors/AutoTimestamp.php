@@ -45,7 +45,7 @@ class AutoTimestamp extends Behavior
 	 * and update the `updated_at` attribute upon AR updating.
 	 */
 	public $attributes = [
-		ActiveRecord::EVENT_BEFORE_INSERT => 'created_at',
+		ActiveRecord::EVENT_BEFORE_INSERT => 'created_at', 'updated_at',
 		ActiveRecord::EVENT_BEFORE_UPDATE => 'updated_at',
 	];
 	/**
