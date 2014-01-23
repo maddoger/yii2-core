@@ -23,7 +23,6 @@ use Yii;
  */
 class ImageUpload extends FileUpload
 {
-
 	/**
 	 * Widget preview height
 	 * @var int
@@ -61,7 +60,7 @@ class ImageUpload extends FileUpload
 
 		if (!isset($this->versions['original']))
 			$this->versions['original'] = array();
-		if (!isset($this->versions['preview']))
+		if (!isset($this->versions['preview']) && ($this->previewWidth || $this->previewHeight))
 			$this->versions['preview'] = array('fit' => array($this->previewWidth, $this->previewHeight));
 	}
 

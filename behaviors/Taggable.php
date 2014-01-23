@@ -12,7 +12,34 @@ use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
 
 /**
+ *
+ * 'tags' => Array(
+ *   'class' => 'rusporting\core\behaviors\Taggable',
+ *
+ * 		// Tag model path alias.
+ * 		'tagModel' => 'rusporting\news\models\Tag',
+ *
+ *		// The field name which contains tag title.
+ *		'tagTableTitle' => 'title',
+ *
+ *		// The name of relation table.
+ *		'tagRelationTable' => 'tbl_user_tag',
+ *
+ *		 // The name of attribute in relation table which recalls tag.
+ *		 'tagRelationTableTagFk' => 'tag_id',
+ *
+ * 		// The name of attribute in relation table which recalls model.
+ *		 'tagRelationTableModelFk' => 'user_id',
+ *
+ * 		// Separator for tags in strings.
+ * 		'tagsSeparator' => ', '
+ *
+ * 		// Read-only, default is false
+ * 		'readOnly' => true
+ *
+ *
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
+ *
  */
 class Taggable extends Behavior
 {
@@ -134,16 +161,16 @@ class Taggable extends Behavior
 	{
 		$this->loadTags();
 
-		if ( !$this->owner->isNewRecord ) {
+		if (!$this->owner->isNewRecord) {
 			$this->clearAttachedTags();
 		}
 
 		$rows = [];
 
 		/* @var $tag ActiveRecord */
-		foreach ( $this->tagsList as $tag ) {
+		foreach ($this->tagsList as $tag) {
 
-			if ( $tag->isNewRecord ) {
+			if ($tag->isNewRecord) {
 				if ($this->readOnly || !$tag->save()) {
 					continue;
 				}
@@ -184,13 +211,13 @@ class Taggable extends Behavior
 		}
 
 		if ($this->tagRelationTable === null) {
-			$this->tagRelationTable = $this->owner->tableName().'_'.Inflector::camel2id(StringHelper::basename($this->tagModel), '_');
+			$this->tagRelationTable = $this->owner->tableName() . '_' . Inflector::camel2id(StringHelper::basename($this->tagModel), '_');
 		}
 		if ($this->tagRelationTableTagFk === null) {
-			$this->tagRelationTableTagFk = Inflector::camel2id(StringHelper::basename($this->tagModel), '_').'_id';
+			$this->tagRelationTableTagFk = Inflector::camel2id(StringHelper::basename($this->tagModel), '_') . '_id';
 		}
 		if ($this->tagRelationTableModelFk === null) {
-			$this->tagRelationTableModelFk = Inflector::camel2id(StringHelper::basename(get_class($this->owner)), '_').'_id';
+			$this->tagRelationTableModelFk = Inflector::camel2id(StringHelper::basename(get_class($this->owner)), '_') . '_id';
 		}
 
 		if ($this->relationName === null) {
@@ -240,14 +267,15 @@ class Taggable extends Behavior
 	 *
 	 * @return boolean True if ALL specified tags are attached to the model.
 	 */
-	public function has() {
+	public function has()
+	{
 
 		$this->loadTags();
-		$tagsList = $this->getTagsList( func_get_args() );
+		$tagsList = $this->getTagsList(func_get_args());
 
 		$result = true;
 
-		foreach ( array_keys( $tagsList ) as $tagTitle ) {
+		foreach (array_keys($tagsList) as $tagTitle) {
 
 			if (array_key_exists($tagTitle, $this->tagsList)) {
 				$result = false;
@@ -270,10 +298,11 @@ class Taggable extends Behavior
 	 *
 	 * @return ActiveRecord Model that behaviour is attached to.
 	 */
-	public function set() {
+	public function set()
+	{
 		$this->tagsAreLoaded = true;
 
-		$this->tagsList = $this->getTagsList( func_get_args() );
+		$this->tagsList = $this->getTagsList(func_get_args());
 
 		return $this->owner;
 	}
@@ -287,9 +316,10 @@ class Taggable extends Behavior
 	 *
 	 * @return ActiveRecord Model that behaviour is attached to.
 	 */
-	public function add() {
+	public function add()
+	{
 		$this->loadTags();
-		$new = $this->getTagsList( func_get_args() );
+		$new = $this->getTagsList(func_get_args());
 		if ($new) {
 			$this->tagsList = array_merge($this->tagsList, $new);
 		}
@@ -306,12 +336,13 @@ class Taggable extends Behavior
 	 *
 	 * @return ActiveRecord Model that behaviour is attached to.
 	 */
-	public function remove() {
+	public function remove()
+	{
 		$this->loadTags();
 
-		$tagsList = $this->getTagsList( func_get_args() );
+		$tagsList = $this->getTagsList(func_get_args());
 
-		foreach ( array_keys( $tagsList ) as $tagTitle ) {
+		foreach (array_keys($tagsList) as $tagTitle) {
 			unset($this->tagsList[$tagTitle]);
 		}
 
@@ -324,7 +355,8 @@ class Taggable extends Behavior
 	 *
 	 * @return ActiveRecord Model that behaviour is attached to.
 	 */
-	public function reset() {
+	public function reset()
+	{
 		$this->tagsAreLoaded = true;
 
 		$this->tagsList = [];
@@ -332,15 +364,19 @@ class Taggable extends Behavior
 		return $this->owner;
 	}
 
-
-	public function __toString()
+	public function getString()
 	{
 		$this->loadTags();
 
 		return implode(
 			$this->tagsSeparator,
-			array_keys( $this->tagsList )
+			array_keys($this->tagsList)
 		);
+	}
+
+	public function __toString()
+	{
+		return $this->getString();
 	}
 
 	/**
@@ -350,18 +386,19 @@ class Taggable extends Behavior
 	 * @param Array $methodArguments The list of input parameters were passed to interface method.
 	 * @return \ArrayObject List of tag object corresponding to input parameters.
 	 */
-	protected function getTagsList( $methodArguments ) {
+	protected function getTagsList($methodArguments)
+	{
 		$result = [];
 
-		foreach ( $methodArguments as $tagList ) {
+		foreach ($methodArguments as $tagList) {
 
-			$this->normalizeTagList( $tagList );
+			$this->normalizeTagList($tagList);
 
-			foreach ( $tagList as $tag ) {
+			foreach ($tagList as $tag) {
 
-				$tagTitle = $this->prepareTagTitle( $tag );
+				$tagTitle = $this->prepareTagTitle($tag);
 
-				$result[$tagTitle] = $this->prepareTagObject( $tag, $tagTitle );
+				$result[$tagTitle] = $this->prepareTagObject($tag, $tagTitle);
 			}
 		}
 
@@ -373,15 +410,16 @@ class Taggable extends Behavior
 	 *
 	 * @param Array $tagList
 	 */
-	private function normalizeTagList( &$tagList ) {
+	private function normalizeTagList(&$tagList)
+	{
 
-		if ( !is_array( $tagList ) ) {
+		if (!is_array($tagList)) {
 
-			if ( is_string( $tagList ) ) {
-				$tagList = explode( $this->tagsSeparator, $tagList );
+			if (is_string($tagList)) {
+				$tagList = explode($this->tagsSeparator, $tagList);
 
 			} else {
-				$tagList = Array( $tagList );
+				$tagList = Array($tagList);
 			}
 		}
 	}
@@ -398,18 +436,19 @@ class Taggable extends Behavior
 	protected function prepareTagObject(
 		$tag,
 		$tagTitle
-	) {
+	)
+	{
 
 		/* @var $tagModel ActiveRecord */
 		$tagModel = $this->blankTagModel;
-		$tagModelClass = get_class( $tagModel );
+		$tagModelClass = get_class($tagModel);
 
-		if ( isset( $this->tagsList[$tagTitle] ) ) {
+		if (isset($this->tagsList[$tagTitle])) {
 			$result = $this->tagsList[$tagTitle];
 
 		} else {
 
-			if ( is_object( $tag ) && $tag instanceof $tagModelClass ) {
+			if (is_object($tag) && $tag instanceof $tagModelClass) {
 				$result = $tag;
 
 			} else {
@@ -434,33 +473,34 @@ class Taggable extends Behavior
 	 *
 	 * @throws Exception
 	 */
-	protected function prepareTagTitle( $tag ) {
+	protected function prepareTagTitle($tag)
+	{
 
 		/* @var $tagModel ActiveRecord */
 		$tagModel = $this->blankTagModel;
-		$tagModelClass = get_class( $tagModel );
+		$tagModelClass = get_class($tagModel);
 
-		if ( $tag instanceof $tagModelClass ) {
-			$tagTitle = $tag->getAttribute( $this->tagTableTitle );
+		if ($tag instanceof $tagModelClass) {
+			$tagTitle = $tag->getAttribute($this->tagTableTitle);
 
-		} elseif ( is_object( $tag ) && !method_exists( $tag, '__toString' ) ) {
+		} elseif (is_object($tag) && !method_exists($tag, '__toString')) {
 			throw new Exception(
 				sprintf(
 					'It is unable to typecast to String object of class %s',
-					get_class( $tag )
+					get_class($tag)
 				)
 			);
 
 		} else {
-			$tagTitle = (string) $tag;
+			$tagTitle = (string)$tag;
 		}
 
-		$result = trim( strip_tags( $tagTitle ) );
+		$result = trim(strip_tags($tagTitle));
 
 		return $result;
 	}
 
-	protected  function clearAttachedTags()
+	protected function clearAttachedTags()
 	{
 		$relation = $this->getRelation();
 		$pivot = $relation->via->from[0];

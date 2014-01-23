@@ -5,6 +5,7 @@ namespace rusporting\core\behaviors;
 use yii\base\Behavior;
 use yii\base\Exception;
 use yii\db\ActiveRecord;
+use yii\helpers\FileHelper;
 use yii\web\UploadedFile;
 use Yii;
 
@@ -149,7 +150,16 @@ class FileUpload extends Behavior
 					$filename = $this->prefix . md5_file($file->tempName) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
 				}
 
-				if ($file->saveAs($this->getFilePathFromFileName($filename))) {
+				//Check directory
+				$path = $this->getFilePathFromFileName($filename);
+				$dir = dirname($path);
+
+				if (!is_dir($dir)) {
+					if (!FileHelper::createDirectory($dir)) {
+						throw new Exception('Directory creation failed!');
+					}
+				}
+				if ($file->saveAs($path)) {
 					$this->owner->setAttribute($this->attribute, $this->getFileUrlFromFileName($filename));
 					$this->afterUpload();
 				}
