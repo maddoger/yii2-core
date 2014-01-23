@@ -1,43 +1,119 @@
 <?php
-/**
- * @link https://github.com/2amigos/yii2-taggable-behavior
- * @copyright Copyright (c) 2013 Alexander Kochetov
- * @license http://opensource.org/licenses/BSD-3-Clause
- */
 
 namespace rusporting\core\behaviors;
 
 use yii\base\Behavior;
 use yii\base\Event;
+use yii\base\Exception;
 use yii\db\ActiveRecord;
 use yii\db\Query;
+use Yii;
+use yii\helpers\Inflector;
+use yii\helpers\StringHelper;
 
 /**
- * @author Alexander Kochetov <creocoder@gmail.com>
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  */
 class Taggable extends Behavior
 {
 	/**
-	 * @var ActiveRecord the owner of this behavior.
+	 * @var \yii\db\ActiveRecord
 	 */
 	public $owner;
+
 	/**
+	 * The name of relation
+	 *
+	 * By default will be '{tagModelClassName}'.
+	 */
+	public $relationName = null;
+
+	/**
+	 * Tag model path alias.
+	 *
+	 * Will be passed as 'class' attribute value to Yii::createComponent().
+	 *
+	 * @var string
+	 *
+	 * @see YiiBase::createComponent()
+	 */
+	public $tagModel = null;
+
+	/**
+	 * The field name which contains tag title.
+	 *
+	 * Will be passed to CActiveRecord::getAttribute().
+	 *
+	 * @var string
+	 *
+	 * @see CActiveRecord::getAttribute()
+	 */
+	public $tagTableTitle = 'title';
+
+	/**
+	 * The name of relation table.
+	 *
+	 * By default will be '{modelTableName}_{tagTableName}'.
+	 *
 	 * @var string
 	 */
-	public $attribute = 'tagNames';
+	public $tagRelationTable = null;
+
 	/**
+	 * The name of attribute in relation table which recalls tag.
+	 *
+	 * By default will be '{tagTableName}_id'.
+	 *
 	 * @var string
 	 */
-	public $name = 'name';
+	public $tagRelationTableTagFk = null;
+
 	/**
+	 * The name of attribute in relation table which recalls model.
+	 *
+	 * By default will be '{modelTableName}_id'.
+	 *
 	 * @var string
 	 */
-	public $frequency = 'frequency';
+	public $tagRelationTableModelFk = null;
+
 	/**
+	 * Separator for tags in strings.
+	 *
 	 * @var string
 	 */
-	public $relation = 'tags';
+	public $tagsSeparator = ', ';
+
+	/**
+	 * @var bool can use only existing tags
+	 */
+	public $readOnly = false;
+
+	/**
+	 * The list of attached to model tags.
+	 *
+	 * @var Array
+	 */
+	protected $tagsList;
+
+	/**
+	 * Instance of blank (without attributes) tag model for internal usage.
+	 *
+	 * @var \yii\db\ActiveRecord
+	 */
+	protected $blankTagModel = null;
+
+	/**
+	 * Shows were tags already loaded from DB or not.
+	 *
+	 * @var bool
+	 */
+	protected $tagsAreLoaded = false;
+
+	/**
+	 * @var \yii\db\ActiveRelationInterface
+	 */
+	protected $relation = null;
 
 	/**
 	 * @inheritdoc
@@ -45,29 +121,10 @@ class Taggable extends Behavior
 	public function events()
 	{
 		return [
-			ActiveRecord::EVENT_AFTER_FIND => 'afterFind',
 			ActiveRecord::EVENT_AFTER_INSERT => 'afterSave',
 			ActiveRecord::EVENT_AFTER_UPDATE => 'afterSave',
-			ActiveRecord::EVENT_BEFORE_DELETE => 'beforeDelete',
+			ActiveRecord::EVENT_AFTER_DELETE => 'afterDelete',
 		];
-	}
-
-	/**
-	 * @param Event $event
-	 */
-	public function afterFind($event)
-	{
-		if ($this->owner->isRelationPopulated($this->relation)) {
-			$items = [];
-
-			foreach ($this->owner->{$this->relation} as $tag) {
-				$items[] = $tag->{$this->name};
-			}
-
-			$this->owner->{$this->attribute} = is_array($this->owner->{$this->attribute})
-				? $items
-				: implode(', ', $items);
-		}
 	}
 
 	/**
@@ -75,45 +132,21 @@ class Taggable extends Behavior
 	 */
 	public function afterSave($event)
 	{
-		if ($this->owner->{$this->attribute} === null) {
-			return;
+		$this->loadTags();
+
+		if ( !$this->owner->isNewRecord ) {
+			$this->clearAttachedTags();
 		}
 
-		if (!$this->owner->getIsNewRecord()) {
-			$this->beforeDelete($event);
-		}
-
-		$names = array_unique(preg_split(
-			'/\s*,\s*/u',
-			preg_replace(
-				'/\s+/u',
-				' ',
-				is_array($this->owner->{$this->attribute})
-					? implode(',', $this->owner->{$this->attribute})
-					: $this->owner->{$this->attribute}
-			),
-			-1,
-			PREG_SPLIT_NO_EMPTY
-		));
-
-		$relation = $this->owner->getRelation($this->relation);
-		$pivot = $relation->via->from[0];
-		/** @var ActiveRecord $class */
-		$class = $relation->modelClass;
 		$rows = [];
 
-		foreach ($names as $name) {
-			$tag = $class::find([$this->name => $name]);
+		/* @var $tag ActiveRecord */
+		foreach ( $this->tagsList as $tag ) {
 
-			if ($tag === null) {
-				$tag = new $class();
-				$tag->{$this->name} = $name;
-			}
-
-			$tag->{$this->frequency}++;
-
-			if (!$tag->save()) {
-				continue;
+			if ( $tag->isNewRecord ) {
+				if ($this->readOnly || !$tag->save()) {
+					continue;
+				}
 			}
 
 			$rows[] = [$this->owner->getPrimaryKey(), $tag->getPrimaryKey()];
@@ -122,7 +155,7 @@ class Taggable extends Behavior
 		if (!empty($rows)) {
 			$this->owner->getDb()
 						->createCommand()
-						->batchInsert($pivot, [key($relation->via->link), current($relation->link)], $rows)
+						->batchInsert($this->tagRelationTable, [$this->tagRelationTableModelFk, $this->tagRelationTableTagFk], $rows)
 						->execute();
 		}
 	}
@@ -130,12 +163,310 @@ class Taggable extends Behavior
 	/**
 	 * @param Event $event
 	 */
-	public function beforeDelete($event)
+	public function afterDelete($event)
 	{
-		$relation = $this->owner->getRelation($this->relation);
+		$this->clearAttachedTags();
+	}
+
+	public function attach($owner)
+	{
+		parent::attach($owner);
+
+		$this->tagsList = [];
+
+		if (!$this->tagModel) {
+			throw new Exception('tagModel must be set!');
+		}
+		$class = $this->tagModel;
+		$this->blankTagModel = new $class();
+		if (!$this->blankTagModel) {
+			throw new Exception('tagModel invalid value!');
+		}
+
+		if ($this->tagRelationTable === null) {
+			$this->tagRelationTable = $this->owner->tableName().'_'.Inflector::camel2id(StringHelper::basename($this->tagModel), '_');
+		}
+		if ($this->tagRelationTableTagFk === null) {
+			$this->tagRelationTableTagFk = Inflector::camel2id(StringHelper::basename($this->tagModel), '_').'_id';
+		}
+		if ($this->tagRelationTableModelFk === null) {
+			$this->tagRelationTableModelFk = Inflector::camel2id(StringHelper::basename(get_class($this->owner)), '_').'_id';
+		}
+
+		if ($this->relationName === null) {
+			$this->relationName = lcfirst(basename($this->tagModel));
+		}
+	}
+
+	public function getRelation()
+	{
+		if ($this->relation === null) {
+			$this->relation = $this->owner->hasMany($this->tagModel, [$this->blankTagModel->primaryKey()[0] => $this->tagRelationTableTagFk])
+										  ->viaTable($this->tagRelationTable, [$this->tagRelationTableModelFk => $this->owner->primaryKey()[0]]);
+
+		}
+		return $this->relation;
+	}
+
+	public function loadTags()
+	{
+		if (!$this->tagsAreLoaded) {
+			$tagsList = $this->getRelation()->all();
+
+			if ($tagsList) {
+				foreach ($tagsList as $tag) {
+					$this->tagsList[$tag->{$this->tagTableTitle}] = $tag;
+				}
+			}
+			$this->tagsAreLoaded;
+		}
+		return $this->tagsList;
+	}
+
+	/**
+	 * @return \ArrayObject
+	 */
+	public function get()
+	{
+		return $this->tagsList;
+	}
+
+	/**
+	 * Checks whether or not specified tags are attached to the model.
+	 *
+	 * Can be called with any number of arguments of any type. Only constraint
+	 * is that Object arguments should have __toString defined (Not applicable
+	 * to instances of tag model).
+	 *
+	 * @return boolean True if ALL specified tags are attached to the model.
+	 */
+	public function has() {
+
+		$this->loadTags();
+		$tagsList = $this->getTagsList( func_get_args() );
+
+		$result = true;
+
+		foreach ( array_keys( $tagsList ) as $tagTitle ) {
+
+			if (array_key_exists($tagTitle, $this->tagsList)) {
+				$result = false;
+				break;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Attaches to the model specified set of tags that will replace all
+	 * previous ones.
+	 *
+	 * Can be called with any number of arguments of any type. Only constraint
+	 * is that Object arguments should have __toString defined (Not applicable
+	 * to instances of tag model).
+	 *
+	 * Model will be selected if it has AT LEAST ONE of the specified tags attached.
+	 *
+	 * @return ActiveRecord Model that behaviour is attached to.
+	 */
+	public function set() {
+		$this->tagsAreLoaded = true;
+
+		$this->tagsList = $this->getTagsList( func_get_args() );
+
+		return $this->owner;
+	}
+
+	/**
+	 * Attaches tags to model.
+	 *
+	 * Can be called with any number of arguments of any type. Only constraint
+	 * is that Object arguments should have __toString defined (Not applicable
+	 * to instances of tag model).
+	 *
+	 * @return ActiveRecord Model that behaviour is attached to.
+	 */
+	public function add() {
+		$this->loadTags();
+		$new = $this->getTagsList( func_get_args() );
+		if ($new) {
+			$this->tagsList = array_merge($this->tagsList, $new);
+		}
+
+		return $this->owner;
+	}
+
+	/**
+	 * Detaches specified tags from the model.
+	 *
+	 * Can be called with any number of arguments of any type. Only constraint
+	 * is that Object arguments should have __toString defined (Not applicable
+	 * to instances of tag model).
+	 *
+	 * @return ActiveRecord Model that behaviour is attached to.
+	 */
+	public function remove() {
+		$this->loadTags();
+
+		$tagsList = $this->getTagsList( func_get_args() );
+
+		foreach ( array_keys( $tagsList ) as $tagTitle ) {
+			unset($this->tagsList[$tagTitle]);
+		}
+
+		return $this->owner;
+	}
+
+
+	/**
+	 * Detaches all tags from the model.
+	 *
+	 * @return ActiveRecord Model that behaviour is attached to.
+	 */
+	public function reset() {
+		$this->tagsAreLoaded = true;
+
+		$this->tagsList = [];
+
+		return $this->owner;
+	}
+
+
+	public function __toString()
+	{
+		$this->loadTags();
+
+		return implode(
+			$this->tagsSeparator,
+			array_keys( $this->tagsList )
+		);
+	}
+
+	/**
+	 * Parses array of arguments were passed to one of interface methods and
+	 * creates a has map (CMap) of corresponding tag objects.
+	 *
+	 * @param Array $methodArguments The list of input parameters were passed to interface method.
+	 * @return \ArrayObject List of tag object corresponding to input parameters.
+	 */
+	protected function getTagsList( $methodArguments ) {
+		$result = [];
+
+		foreach ( $methodArguments as $tagList ) {
+
+			$this->normalizeTagList( $tagList );
+
+			foreach ( $tagList as $tag ) {
+
+				$tagTitle = $this->prepareTagTitle( $tag );
+
+				$result[$tagTitle] = $this->prepareTagObject( $tag, $tagTitle );
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Makes sure that a list of tags is an array.
+	 *
+	 * @param Array $tagList
+	 */
+	private function normalizeTagList( &$tagList ) {
+
+		if ( !is_array( $tagList ) ) {
+
+			if ( is_string( $tagList ) ) {
+				$tagList = explode( $this->tagsSeparator, $tagList );
+
+			} else {
+				$tagList = Array( $tagList );
+			}
+		}
+	}
+
+	/**
+	 * Makes sure that tag object will be instance of tag model.
+	 *
+	 * @param mixed $tag Initial value of tag
+	 * @param string $tagTitle Tag title
+	 * @return ActiveRecord Tag object
+	 *
+	 * @see CActiveRecord
+	 */
+	protected function prepareTagObject(
+		$tag,
+		$tagTitle
+	) {
+
+		/* @var $tagModel ActiveRecord */
+		$tagModel = $this->blankTagModel;
+		$tagModelClass = get_class( $tagModel );
+
+		if ( isset( $this->tagsList[$tagTitle] ) ) {
+			$result = $this->tagsList[$tagTitle];
+
+		} else {
+
+			if ( is_object( $tag ) && $tag instanceof $tagModelClass ) {
+				$result = $tag;
+
+			} else {
+				$result = $tagModel::find([$this->tagTableTitle => $tagTitle]);
+
+				if ($result === null) {
+					$result = new $tagModelClass();
+					$result->{$this->tagTableTitle} = $tagTitle;
+				}
+			}
+		}
+
+		return $result;
+	}
+
+
+	/**
+	 * Prepares string tag title.
+	 *
+	 * @param mixed $tag initial tag value
+	 * @return string Tag title
+	 *
+	 * @throws Exception
+	 */
+	protected function prepareTagTitle( $tag ) {
+
+		/* @var $tagModel ActiveRecord */
+		$tagModel = $this->blankTagModel;
+		$tagModelClass = get_class( $tagModel );
+
+		if ( $tag instanceof $tagModelClass ) {
+			$tagTitle = $tag->getAttribute( $this->tagTableTitle );
+
+		} elseif ( is_object( $tag ) && !method_exists( $tag, '__toString' ) ) {
+			throw new Exception(
+				sprintf(
+					'It is unable to typecast to String object of class %s',
+					get_class( $tag )
+				)
+			);
+
+		} else {
+			$tagTitle = (string) $tag;
+		}
+
+		$result = trim( strip_tags( $tagTitle ) );
+
+		return $result;
+	}
+
+	protected  function clearAttachedTags()
+	{
+		$relation = $this->getRelation();
 		$pivot = $relation->via->from[0];
+
 		/** @var ActiveRecord $class */
-		$class = $relation->modelClass;
+		/*$class = $relation->modelClass;
 		$query = new Query();
 		$pks = $query
 			->select(current($relation->link))
@@ -145,11 +476,12 @@ class Taggable extends Behavior
 
 		if (!empty($pks)) {
 			$class::updateAllCounters([$this->frequency => -1], ['in', $class::primaryKey(), $pks]);
-		}
+		}*/
 
 		$this->owner->getDb()
 					->createCommand()
 					->delete($pivot, [key($relation->via->link) => $this->owner->getPrimaryKey()])
 					->execute();
 	}
+
 }
