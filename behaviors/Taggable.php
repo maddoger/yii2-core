@@ -275,6 +275,7 @@ class Taggable extends Behavior
 	 */
 	public function get()
 	{
+		$this->loadTags();
 		return $this->tagsList;
 	}
 
