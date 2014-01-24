@@ -259,6 +259,17 @@ class Taggable extends Behavior
 		return $q->asArray($array)->all();
 	}
 
+	public function getAllExistingTagsFormAutocomplete()
+	{
+		$tags = $this->blankTagModel->find()->orderBy($this->tagTableTitle)->all();
+
+		$res = [];
+		foreach ($tags as $tag) {
+			$res[] = array('id' => $tag->{$this->tagTableTitle}, 'text' => $tag->{$this->tagTableTitle});
+		}
+		return $res;
+	}
+
 	/**
 	 * @return \ArrayObject
 	 */
