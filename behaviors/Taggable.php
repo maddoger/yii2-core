@@ -109,7 +109,7 @@ class Taggable extends Behavior
 	 *
 	 * @var string
 	 */
-	public $tagsSeparator = ', ';
+	public $tagsSeparator = ',';
 
 	/**
 	 * @var bool can use only existing tags
@@ -250,6 +250,15 @@ class Taggable extends Behavior
 		return $this->tagsList;
 	}
 
+	public function getAllExistingTags($array = false)
+	{
+		/**
+		 * @var \yii\db\ActiveQuery $q
+		 */
+		$q = $this->blankTagModel->find()->orderBy($this->tagTableTitle);
+		return $q->asArray($array)->all();
+	}
+
 	/**
 	 * @return \ArrayObject
 	 */
@@ -372,6 +381,29 @@ class Taggable extends Behavior
 			$this->tagsSeparator,
 			array_keys($this->tagsList)
 		);
+	}
+
+
+	public function getForAutocomplete()
+	{
+		$this->loadTags();
+
+		$res = [];
+		foreach ($this->tagsList as $tag) {
+			$res[] = array('id' => $tag->{$this->tagTableTitle}, 'text' => $tag->{$this->tagTableTitle});
+		}
+		return $res;
+	}
+
+	public function getArray()
+	{
+		$this->loadTags();
+
+		$res = [];
+		foreach ($this->tagsList as $tag) {
+			$res[] = $tag->attributes;
+		}
+		return $res;
 	}
 
 	public function __toString()
