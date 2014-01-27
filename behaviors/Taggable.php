@@ -67,6 +67,11 @@ class Taggable extends Behavior
 	public $tagModel = null;
 
 	/**
+	 * @var string frequency field name for counters update. If null, updates turns off.
+	 */
+	public $frequency = null;
+
+	/**
 	 * The field name which contains tag title.
 	 *
 	 * Will be passed to CActiveRecord::getAttribute().
