@@ -122,46 +122,85 @@ class FileUpload extends Behavior
 	{
 		//Checking emptiness of the attribute
 		if (in_array($this->owner->scenario,$this->scenarios)
-			&& ($file = UploadedFile::getInstance($this->owner, $this->attribute))
-			&& !$file->hasError
 		) {
-			if (!empty($this->types) && $file) {
-				$valid = strpos(strtolower($this->types), strtolower($file->getExtension())) !== false;
-			} else {
-				$valid = true;
-			}
 
-			if ($valid) {
+			if (($file = UploadedFile::getInstance($this->owner, $this->attribute))
+				&& !$file->hasError) {
+
+				if (!empty($this->types) && $file) {
+					$valid = strpos(strtolower($this->types), strtolower($file->getExtension())) !== false;
+				} else {
+					$valid = true;
+				}
+
+				if ($valid) {
+
+					if ($this->deleteOldFile) {
+						$this->owner->setAttribute($this->attribute, $this->owner->oldAttributes[$this->attribute]);
+						$this->deleteFile();
+						$this->owner->setAttribute($this->attribute, null);
+					}
+
+					if ($this->generateName) {
+						if ($this->attributeForName !== null && $this->owner->hasAttribute($this->attributeForName)) {
+							$filename = $this->prefix . $this->attributeForName . '_' . substr(md5_file($file->tempName), 0, 5) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
+						}
+
+					} else {
+						$filename = $this->prefix . $file->getBaseName() . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
+					}
+
+					if (!isset($filename) || file_exists($this->getFilePathFromFileName($filename))) {
+						$filename = $this->prefix . md5_file($file->tempName) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
+					}
+
+					//Check directory
+					$path = $this->getFilePathFromFileName($filename);
+					$dir = dirname($path);
+
+					if (!is_dir($dir)) {
+						if (!FileHelper::createDirectory($dir)) {
+							throw new Exception('Directory creation failed!');
+						}
+					}
+					if ($file->saveAs($path)) {
+						$this->owner->setAttribute($this->attribute, $this->getFileUrlFromFileName($filename));
+						$this->afterUpload();
+					}
+				}
+			} elseif ($this->owner->isAttributeChanged($this->attribute)) {
+
+				$fileName = $this->owner->{$this->attribute};
 
 				if ($this->deleteOldFile) {
+					$this->owner->setAttribute($this->attribute, $this->owner->oldAttributes[$this->attribute]);
 					$this->deleteFile();
+					$this->owner->setAttribute($this->attribute, $fileName);
 				}
 
-				if ($this->generateName) {
-					if ($this->attributeForName !== null && $this->owner->hasAttribute($this->attributeForName)) {
-						$filename = $this->prefix . $this->attributeForName . '_' . substr(md5_file($file->tempName), 0, 5) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
+
+				if (!empty($fileName)) {
+
+					$valid = strpos(strtolower($this->types), strtolower(pathinfo($fileName, PATHINFO_EXTENSION))) !== false;
+
+					if (!$valid) {
+						$this->owner->setAttribute($this->attribute, null);
+					} else {
+
+						//Copy file
+						/*if (strpos($fileName, $this->directory) === false) {
+							$oldFileName = $fileName;
+							$fileName = $this->directory . DIRECTORY_SEPARATOR . basename($fileName);
+							if (copy($this->getPathFromUrl($oldFileName), $fileName)) {
+								$this->owner->setAttribute($this->attribute, $fileName);
+							} else {
+								$this->owner->setAttribute($this->attribute, null);
+							}
+						}*/
+						$this->owner->setAttribute($this->attribute, $fileName);
+
+						$this->afterUpload();
 					}
-
-				} else {
-					$filename = $this->prefix . $file->getBaseName() . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
-				}
-
-				if (!isset($filename) || file_exists($this->getFilePathFromFileName($filename))) {
-					$filename = $this->prefix . md5_file($file->tempName) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
-				}
-
-				//Check directory
-				$path = $this->getFilePathFromFileName($filename);
-				$dir = dirname($path);
-
-				if (!is_dir($dir)) {
-					if (!FileHelper::createDirectory($dir)) {
-						throw new Exception('Directory creation failed!');
-					}
-				}
-				if ($file->saveAs($path)) {
-					$this->owner->setAttribute($this->attribute, $this->getFileUrlFromFileName($filename));
-					$this->afterUpload();
 				}
 			}
 		}
@@ -190,11 +229,7 @@ class FileUpload extends Behavior
 
 	public function getPath()
 	{
-		$url = $this->owner->getAttribute($this->attribute);
-		if (empty($url)) return null;
-
-		$filePath = str_replace($this->url, $this->directory, $url);
-		return $filePath;
+		return $this->getPathFromUrl($this->owner->getAttribute($this->attribute));
 	}
 
 	public function deleteFile()
@@ -205,6 +240,21 @@ class FileUpload extends Behavior
 		if (file_exists($filePath)) {
 			@unlink($filePath);
 		}
+	}
+
+	protected function getPathFromUrl($url)
+	{
+		if (empty($url)) return null;
+
+		$filePath = $url;
+
+		if (strpos($url, $this->directory) !== false) {
+			$filePath = str_replace($this->url, $this->directory, $url);
+		} elseif (substr($url, 0, 1) === '/') {
+			$filePath = Yii::getAlias('@frontendPath' . DIRECTORY_SEPARATOR . substr($url, mb_strlen(Yii::getAlias('@frontendUrl/'))));
+		}
+
+		return $filePath;
 	}
 
 	protected function afterUpload()

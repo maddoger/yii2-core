@@ -81,7 +81,8 @@ class ImageUpload extends FileUpload
 	{
 		$url = $this->owner->getAttribute($this->attribute);
 		if (empty($url)) return null;
-		$filePath = str_replace($this->url, $this->directory, $url);
+
+		$filePath = $this->getPathFromUrl($url);
 
 		if ($version == 'original') {
 			return $filePath;
@@ -104,6 +105,7 @@ class ImageUpload extends FileUpload
 	{
 		//create image preview for gallery manager
 		$original = $this->getPath();
+		if (!file_exists($original)) return false;
 		foreach ($this->versions as $version => $actions) {
 			/** @var \yii\image\drivers\Image $image */
 			$image = Yii::$app->image->load($original);
@@ -113,6 +115,7 @@ class ImageUpload extends FileUpload
 			}
 			$image->save($this->getPath($version));
 		}
+		return true;
 	}
 
 	public function deleteFile()
