@@ -184,11 +184,13 @@ class Taggable extends Behavior
 				if ($this->readOnly) {
 					continue;
 				}
-
 				$tag->setAttributes($this->newRecordAttributes);
-				if (!$tag->save()) {
-					continue;
-				}
+			}
+			if ($this->frequency !== null) {
+				$tag->{$this->frequency}++;
+			}
+			if (!$tag->save()) {
+				continue;
 			}
 
 			$rows[] = [$this->owner->getPrimaryKey(), $tag->getPrimaryKey()];
@@ -564,18 +566,21 @@ class Taggable extends Behavior
 		$relation = $this->getRelation();
 		$pivot = $relation->via->from[0];
 
-		/** @var ActiveRecord $class */
-		/*$class = $relation->modelClass;
-		$query = new Query();
-		$pks = $query
-			->select(current($relation->link))
-			->from($pivot)
-			->where([key($relation->via->link) => $this->owner->getPrimaryKey()])
-			->column($this->owner->getDb());
+		if ($this->frequency !== null) {
 
-		if (!empty($pks)) {
-			$class::updateAllCounters([$this->frequency => -1], ['in', $class::primaryKey(), $pks]);
-		}*/
+			/** @var ActiveRecord $class */
+			$class = $relation->modelClass;
+			$query = new Query();
+			$pks = $query
+				->select(current($relation->link))
+				->from($pivot)
+				->where([key($relation->via->link) => $this->owner->getPrimaryKey()])
+				->column($this->owner->getDb());
+
+			if (!empty($pks)) {
+				$class::updateAllCounters([$this->frequency => -1], ['in', $class::primaryKey(), $pks]);
+			}
+		}
 
 		$this->owner->getDb()
 					->createCommand()
