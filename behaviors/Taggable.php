@@ -117,6 +117,11 @@ class Taggable extends Behavior
 	public $readOnly = false;
 
 	/**
+	 * @var array attributes for new record
+	 */
+	public $newRecordAttributes = [];
+
+	/**
 	 * The list of attached to model tags.
 	 *
 	 * @var Array
@@ -171,7 +176,12 @@ class Taggable extends Behavior
 		foreach ($this->tagsList as $tag) {
 
 			if ($tag->isNewRecord) {
-				if ($this->readOnly || !$tag->save()) {
+				if ($this->readOnly) {
+					continue;
+				}
+
+				$tag->setAttributes($this->newRecordAttributes);
+				if (!$tag->save()) {
 					continue;
 				}
 			}
@@ -245,7 +255,7 @@ class Taggable extends Behavior
 					$this->tagsList[$tag->{$this->tagTableTitle}] = $tag;
 				}
 			}
-			$this->tagsAreLoaded;
+			$this->tagsAreLoaded = true;
 		}
 		return $this->tagsList;
 	}
