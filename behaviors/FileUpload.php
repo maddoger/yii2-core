@@ -187,6 +187,62 @@ class FileUpload extends Behavior
 						$this->owner->setAttribute($this->attribute, null);
 					} else {
 
+						var_dump($fileName);
+
+						//Remote file?
+						if (preg_match('#\b(([\w-]+://?|www[.])[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|/)))#i', $fileName, $matches)) {
+
+							$content = null;
+
+							if (ini_get('allow_url_fopen')) {
+								//try simple
+								$content = file_get_contents($fileName);
+							} elseif (function_exists('curl_init')) {
+								//else curl
+								$ch = curl_init();
+								curl_setopt($ch, CURLOPT_HEADER, 1);
+								curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+								curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+								curl_setopt($ch, CURLOPT_URL, $fileName);
+								$result = curl_exec($ch);
+								curl_close($ch);
+
+								$content = $result;
+							}
+
+							if ($content !== null) {
+
+								$ext = ($this->forceExt ? $this->forceExt : pathinfo($fileName, PATHINFO_EXTENSION));
+
+								if ($this->generateName) {
+									if ($this->attributeForName !== null && $this->owner->hasAttribute($this->attributeForName)) {
+										$newFileName = $this->prefix . $this->attributeForName . '_' . substr(md5($content), 0, 5) . '.' . $ext;
+									}
+
+								} else {
+									$newFileName = $this->prefix . basename($fileName) . '.' . $ext;
+								}
+
+								if (!isset($newFileName) || file_exists($this->getFilePathFromFileName($newFileName))) {
+									$newFileName = $this->prefix . md5($content) . '.' . $ext;
+								}
+
+								$path = $this->getFilePathFromFileName($newFileName);
+								$dir = dirname($path);
+
+								if (!is_dir($dir)) {
+									if (!FileHelper::createDirectory($dir)) {
+										throw new Exception('Directory creation failed!');
+									}
+								}
+								if (file_put_contents($path, $content)) {
+									$fileName = $this->getFileUrlFromFileName($newFileName);
+								}
+							} else {
+								$fileName = null;
+							}
+						}
+
 						//Copy file
 						/*if (strpos($fileName, $this->directory) === false) {
 							$oldFileName = $fileName;
