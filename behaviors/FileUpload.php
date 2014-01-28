@@ -172,7 +172,7 @@ class FileUpload extends Behavior
 
 				$fileName = $this->owner->{$this->attribute};
 
-				if ($this->deleteOldFile) {
+				if ($this->deleteOldFile && isset($this->owner->oldAttributes[$this->attribute])) {
 					$this->owner->setAttribute($this->attribute, $this->owner->oldAttributes[$this->attribute]);
 					$this->deleteFile();
 					$this->owner->setAttribute($this->attribute, $fileName);
