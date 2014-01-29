@@ -166,6 +166,8 @@ class FileUpload extends Behavior
 					if ($file->saveAs($path)) {
 						$this->owner->setAttribute($this->attribute, $this->getFileUrlFromFileName($filename));
 						$this->afterUpload();
+					} else {
+						$this->owner->setAttribute($this->attribute, null);
 					}
 				}
 			} elseif ($this->owner->isAttributeChanged($this->attribute)) {
@@ -186,8 +188,6 @@ class FileUpload extends Behavior
 					if (!$valid) {
 						$this->owner->setAttribute($this->attribute, null);
 					} else {
-
-						var_dump($fileName);
 
 						//Remote file?
 						if (preg_match('#\b(([\w-]+://?|www[.])[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|/)))#i', $fileName, $matches)) {
@@ -220,7 +220,8 @@ class FileUpload extends Behavior
 									}
 
 								} else {
-									$newFileName = $this->prefix . basename($fileName) . '.' . $ext;
+									$n = basename($fileName);
+									$newFileName = $this->prefix . substr($n, 0, strrpos($n, '.')) . '.' . $ext;
 								}
 
 								if (!isset($newFileName) || file_exists($this->getFilePathFromFileName($newFileName))) {
