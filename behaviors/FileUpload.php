@@ -95,7 +95,10 @@ class FileUpload extends Behavior
 
 	private $_oldValue = null;
 
-	// override to init some things
+	/**
+	 * @param \yii\db\ActiveRecord $owner
+	 * @throws \yii\base\Exception
+	 */
 	public function attach($owner)
 	{
 		parent::attach($owner);
@@ -103,7 +106,9 @@ class FileUpload extends Behavior
 		if (empty($this->attribute)) {
 			throw new Exception('Attribute property must be set.');
 		}
-
+		if ($this->attributeForName === null) {
+			$this->attributeForName = $owner->primaryKey()[0];
+		}
 		$this->_oldValue = $this->owner->{$this->attribute};
 	}
 
@@ -143,7 +148,7 @@ class FileUpload extends Behavior
 
 					if ($this->generateName) {
 						if ($this->attributeForName !== null && $this->owner->hasAttribute($this->attributeForName)) {
-							$filename = $this->prefix . $this->attributeForName . '_' . substr(md5_file($file->tempName), 0, 5) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
+							$filename = $this->prefix . $this->owner->{$this->attributeForName} . '_' . substr(md5_file($file->tempName), 0, 5) . '.' . ($this->forceExt ? $this->forceExt : $file->getExtension());
 						}
 
 					} else {
@@ -216,7 +221,7 @@ class FileUpload extends Behavior
 
 								if ($this->generateName) {
 									if ($this->attributeForName !== null && $this->owner->hasAttribute($this->attributeForName)) {
-										$newFileName = $this->prefix . $this->attributeForName . '_' . substr(md5($content), 0, 5) . '.' . $ext;
+										$newFileName = $this->prefix . $this->owner->{$this->attributeForName} . '_' . substr(md5($content), 0, 5) . '.' . $ext;
 									}
 
 								} else {
