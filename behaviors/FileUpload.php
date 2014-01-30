@@ -39,9 +39,9 @@ class FileUpload extends Behavior
 	public $attribute;
 
 	/**
-	 * this attribute (or array of attributes) will determine a part of the file name. Default is model primary key(s).
+	 * this attribute (or array of attributes) will determine a part of the file name.
 	 */
-	public $attributeForName;
+	public $attributeForName = null;
 
 	/**
 	 * @var array Scenarios for adding validation rule
@@ -105,9 +105,6 @@ class FileUpload extends Behavior
 
 		if (empty($this->attribute)) {
 			throw new Exception('Attribute property must be set.');
-		}
-		if ($this->attributeForName === null) {
-			$this->attributeForName = $owner->primaryKey()[0];
 		}
 		$this->_oldValue = $this->owner->{$this->attribute};
 	}
