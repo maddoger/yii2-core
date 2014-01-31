@@ -66,6 +66,10 @@ class ImageUpload extends FileUpload
 
 	public function getUrl($version='original')
 	{
+		/*if (!$this->hasVersion($version)) {
+			$this->deleteVersionImages();
+			$this->updateImages();
+		}*/
 		$url = $this->owner->getAttribute($this->attribute);
 		if (empty($url)) return null;
 
@@ -73,7 +77,7 @@ class ImageUpload extends FileUpload
 			return $url;
 		} else {
 			$info = pathinfo($url);
-			return $info['dirname']. DIRECTORY_SEPARATOR . $info['filename'] . '_' . $version  .'.'. $info['extension'];
+			return $info['dirname']. DIRECTORY_SEPARATOR . $version . '_'  . $info['filename']  .'.'. $info['extension'];
 		}
 	}
 
@@ -88,7 +92,7 @@ class ImageUpload extends FileUpload
 			return $filePath;
 		} else {
 			$info = pathinfo($filePath);
-			return $info['dirname']. DIRECTORY_SEPARATOR . $info['filename'] . '_' . $version  .'.'. $info['extension'];
+			return $info['dirname']. DIRECTORY_SEPARATOR . $version . '_'  . $info['filename']  .'.'. $info['extension'];
 		}
 	}
 
