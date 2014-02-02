@@ -23,7 +23,7 @@ use yii\helpers\StringHelper;
  *		'tagTableTitle' => 'title',
  *
  *		// The name of relation table.
- *		'tagRelationTable' => 'tbl_user_tag',
+ *		'tagRelationTable' => $this->getDb()->tablePrefix.'user_tag',
  *
  *		 // The name of attribute in relation table which recalls tag.
  *		 'tagRelationTableTagFk' => 'tag_id',
