@@ -120,7 +120,7 @@ class FileUpload extends Behavior
 		];
 	}
 
-	public function beforeSave()
+	public function beforeSave($insert)
 	{
 		//Checking emptiness of the attribute
 		if (in_array($this->owner->scenario,$this->scenarios)
@@ -137,8 +137,8 @@ class FileUpload extends Behavior
 
 				if ($valid) {
 
-					if ($this->deleteOldFile) {
-						$this->owner->setAttribute($this->attribute, $this->owner->oldAttributes[$this->attribute]);
+					if (!$insert && $this->deleteOldFile && isset($this->owner->oldAttributes[$this->attribute])) {
+						$this->owner->setAttribute($this->attribute, $this->owner->getOldAttribute($this->attribute));
 						$this->deleteFile();
 						$this->owner->setAttribute($this->attribute, null);
 					}
@@ -176,12 +176,11 @@ class FileUpload extends Behavior
 
 				$fileName = $this->owner->{$this->attribute};
 
-				if ($this->deleteOldFile && isset($this->owner->oldAttributes[$this->attribute])) {
-					$this->owner->setAttribute($this->attribute, $this->owner->oldAttributes[$this->attribute]);
+				if (!$insert && $this->deleteOldFile && isset($this->owner->oldAttributes[$this->attribute])) {
+					$this->owner->setAttribute($this->attribute, $this->owner->getOldAttribute($this->attribute));
 					$this->deleteFile();
-					$this->owner->setAttribute($this->attribute, $fileName);
+					$this->owner->setAttribute($this->attribute, null);
 				}
-
 
 				if (!empty($fileName)) {
 
