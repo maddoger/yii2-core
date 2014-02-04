@@ -32,14 +32,19 @@ class ActiveRecord extends BaseActiveRecord
 	public function setDateTimeAttribute($name, $value, $format = 'd.m.Y - H:i')
 	{
 		if (isset($this->{$name})) {
-			$datetime = \DateTime::createFromFormat($format, $value);
-			$this->{$name} = $datetime ? $datetime->format('Y-m-d H:i:s') : null;
+			$value = trim($value);
+			if (empty($value)) {
+				$this->{$name} = null;
+			} else {
+				$datetime = \DateTime::createFromFormat($format, $value);
+				$this->{$name} = $datetime ? $datetime->format('Y-m-d H:i:s') : null;
+			}
 		}
 
 	}
 
 	/**
-	 * Set datetime attribute from format to native db format
+	 * Set date attribute from format to native db format
 	 * @param $name
 	 * @param $value
 	 * @param string $format
@@ -47,10 +52,14 @@ class ActiveRecord extends BaseActiveRecord
 	public function setDateAttribute($name, $value, $format = 'd.m.Y')
 	{
 		if (isset($this->{$name})) {
-			$datetime = \DateTime::createFromFormat($format, $value);
-			$this->{$name} = $datetime ? $datetime->format('Y-m-d') : null;
+			$value = trim($value);
+			if (empty($value)) {
+				$this->{$name} = null;
+			} else {
+				$datetime = \DateTime::createFromFormat($format, $value);
+				$this->{$name} = $datetime ? $datetime->format('Y-m-d') : null;
+			}
 		}
-
 	}
 
 	/*public function init(){
