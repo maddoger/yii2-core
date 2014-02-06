@@ -126,14 +126,20 @@ class FileUpload extends Behavior
 		if (in_array($this->owner->scenario,$this->scenarios)
 		) {
 
-			if (($file = UploadedFile::getInstance($this->owner, $this->attribute))
-				&& !$file->hasError) {
+			if ($this->file !== null) {
+				$file = $this->file;
+			} else {
+				$file = UploadedFile::getInstance($this->owner, $this->attribute);
+			}
 
-				if (!empty($this->types) && $file) {
+			if ($file && ($file instanceof UploadedFile && !$file->hasError)) {
+
+				if (!empty($this->types)) {
 					$valid = strpos(strtolower($this->types), strtolower($file->getExtension())) !== false;
 				} else {
 					$valid = true;
 				}
+
 
 				if ($valid) {
 
