@@ -2,7 +2,7 @@
 /**
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  * @link http://syrchikov.name/
- * @copyright Copyright (c) 2013-2014 maddoger Inc.
+ * @copyright Copyright (c) 2013-2014 Vitaliy Syrchikov
  */
 
 namespace maddoger\core;
