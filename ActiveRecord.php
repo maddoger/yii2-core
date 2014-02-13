@@ -2,10 +2,10 @@
 /**
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  * @link http://syrchikov.name/
- * @copyright Copyright (c) 2013-2014 Rusporting Inc.
+ * @copyright Copyright (c) 2013-2014 maddoger Inc.
  */
 
-namespace rusporting\core;
+namespace maddoger\core;
 
 use yii\db\ActiveRecord as BaseActiveRecord;
 use yii\base\Event;

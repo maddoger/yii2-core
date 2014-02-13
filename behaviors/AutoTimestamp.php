@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace rusporting\core\behaviors;
+namespace maddoger\core\behaviors;
 
 use yii\base\Behavior;
 use yii\base\Event;
@@ -22,7 +22,7 @@ use yii\db\ActiveRecord;
  * public function behaviors()
  * {
  *     return [
- *         'timestamp' => ['class' => 'rusporting\core\behaviors\AutoTimestamp'],
+ *         'timestamp' => ['class' => 'maddoger\core\behaviors\AutoTimestamp'],
  *     ];
  * }
  * ~~~

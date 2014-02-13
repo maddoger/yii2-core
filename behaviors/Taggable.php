@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core\behaviors;
+namespace maddoger\core\behaviors;
 
 use yii\base\Behavior;
 use yii\base\Event;
@@ -14,10 +14,10 @@ use yii\helpers\StringHelper;
 /**
  *
  * 'tags' => Array(
- *   'class' => 'rusporting\core\behaviors\Taggable',
+ *   'class' => 'maddoger\core\behaviors\Taggable',
  *
  * 		// Tag model path alias.
- * 		'tagModel' => 'rusporting\news\models\Tag',
+ * 		'tagModel' => 'maddoger\news\models\Tag',
  *
  *		// The field name which contains tag title.
  *		'tagTableTitle' => 'title',

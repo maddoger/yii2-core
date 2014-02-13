@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core;
+namespace maddoger\core;
 
 
 class BackendController extends FrontendController

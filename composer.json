@@ -1,5 +1,5 @@
 {
-	"name": "rusporting/yii2-core",
+	"name": "maddoger/yii2-core",
 	"type": "yii2-extension",
 	"description": "Core extension for Yii2.",
 	"authors": [
@@ -12,12 +12,12 @@
     "require": {
         "php": ">=5.3.0",
         "yiisoft/yii2": "*",
-	    "rusporting/yii2-image": "*",
+	    "maddoger/yii2-image": "*",
 	    "oyejorge/less.php": "dev-master"
     },
 	"autoload": {
 		"psr-4": {
-			"rusporting\\core\\": ""
+			"maddoger\\core\\": ""
 		}
 	}
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core;
+namespace maddoger\core;
 
 use yii\base\Model;
 use yii\helpers\ArrayHelper;

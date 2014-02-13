@@ -1,1 +1,1 @@
-Yii2 Core Module by Rusporting
+Yii2 Core Module by maddoger

@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core\behaviors;
+namespace maddoger\core\behaviors;
 
 use yii\base\Behavior;
 use yii\base\Event;

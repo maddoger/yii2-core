@@ -3,7 +3,7 @@
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  */
 
-namespace rusporting\core\assetconverter;
+namespace maddoger\core\assetconverter;
 
 use Yii;
 use yii\base\Component;

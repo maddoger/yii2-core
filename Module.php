@@ -2,7 +2,7 @@
 
 //Core module class
 
-namespace rusporting\core;
+namespace maddoger\core;
 
 use Yii;
 use yii\base\Module as BaseModule;
@@ -164,9 +164,9 @@ class Module extends BaseModule
 	 * Returns configuration model
 	 * Example:
 	 * [
-	 * 'pageTitle' => ['label' => Yii::t('rusporting/admin', 'Admin page title')],
-	 * 'brandName' => ['label' => Yii::t('rusporting/admin', 'Brand name')],
-	 * 'brandLogo' => ['type'=>'file', 'label' => Yii::t('rusporting/admin', 'Brand logo file')],
+	 * 'pageTitle' => ['label' => Yii::t('maddoger/admin', 'Admin page title')],
+	 * 'brandName' => ['label' => Yii::t('maddoger/admin', 'Brand name')],
+	 * 'brandLogo' => ['type'=>'file', 'label' => Yii::t('maddoger/admin', 'Brand logo file')],
 	 * ]
 	 *
 	 * @return DynamicModel
@@ -177,8 +177,8 @@ class Module extends BaseModule
 
 		if ($this->hasBackend()) {
 			$model->addAttributes([
-				'backendSortNumber' => ['label' => Yii::t('rusporting/admin', 'Sort in admin menu'),
-					'help' => Yii::t('rusporting/admin', 'Number for sorting the module menu in admin panel.'),
+				'backendSortNumber' => ['label' => Yii::t('maddoger/admin', 'Sort in admin menu'),
+					'help' => Yii::t('maddoger/admin', 'Number for sorting the module menu in admin panel.'),
 					'rules' => [
 						['backendSortNumber', 'integer'],
 						['backendSortNumber', 'filter', 'filter'=>'intval'],

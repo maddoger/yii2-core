@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core\behaviors;
+namespace maddoger\core\behaviors;
 
 use yii\base\Behavior;
 use yii\base\Event;
@@ -18,7 +18,7 @@ use Yii;
  * public function behaviors()
  * {
  *     return [
- *         'user' => ['class' => 'rusporting\core\behaviors\AutoUser'],
+ *         'user' => ['class' => 'maddoger\core\behaviors\AutoUser'],
  *     ];
  * }
  * ~~~

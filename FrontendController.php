@@ -1,6 +1,6 @@
 <?php
 
-namespace rusporting\core;
+namespace maddoger\core;
 
 use yii\web\Controller;
 use Yii;
@@ -50,9 +50,9 @@ class FrontendController extends Controller
 	 *
 	 * ```
 	 * [
-	 * ['label'=>Yii::t('rusporting/admin', 'Modules'), 'fa'=>'gears', 'url'=> ['/admin/modules']],
+	 * ['label'=>Yii::t('maddoger/admin', 'Modules'), 'fa'=>'gears', 'url'=> ['/admin/modules']],
 	 * ['label'=>$module->getName(), 'url'=> ['/admin/modules/config', 'module'=>$module->id], 'fa'=>$module->getFaIcon()],
-	 * ['label'=>Yii::t('rusporting/admin', 'Configuration')],
+	 * ['label'=>Yii::t('maddoger/admin', 'Configuration')],
 	 * ]
 	 * ```
 	 */
