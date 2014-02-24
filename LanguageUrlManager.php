@@ -35,7 +35,7 @@ class LanguageUrlManager extends UrlManager
 			$langUnset = true;
 		}
 		$anchor = isset($params['#']) ? '#' . $params['#'] : '';
-		unset($params['#'], $params[$this->routeVar]);
+		unset($params['#'], $params[$this->routeParam]);
 
 		$route = trim($route, '/');
 		$baseUrl = $this->getBaseUrl();
@@ -65,7 +65,7 @@ class LanguageUrlManager extends UrlManager
 			}
 			return "$baseUrl/{$route}{$anchor}";
 		} else {
-			$url = "$baseUrl?{$this->routeVar}=$route";
+			$url = "$baseUrl?{$this->routeParam}=$route";
 			if (!empty($params)) {
 				$url .= '&' . http_build_query($params);
 			}
