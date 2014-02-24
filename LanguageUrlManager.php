@@ -27,17 +27,20 @@ class LanguageUrlManager extends UrlManager
 		return $res;
 	}
 
-	public function createUrl($route, $params = [])
+	public function createUrl($params)
 	{
 		$langUnset = false;
 		if (!isset($params['language'])) {
 			$params['language'] = Yii::$app->language;
 			$langUnset = true;
 		}
+
+		$params = (array)$params;
 		$anchor = isset($params['#']) ? '#' . $params['#'] : '';
 		unset($params['#'], $params[$this->routeParam]);
 
-		$route = trim($route, '/');
+		$route = trim($params[0], '/');
+		unset($params[0]);
 		$baseUrl = $this->getBaseUrl();
 
 		if ($this->enablePrettyUrl) {
@@ -60,13 +63,13 @@ class LanguageUrlManager extends UrlManager
 				$route .= $this->suffix;
 			}
 			if (!empty($params)) {
-				if ($langUnset) unset($params['language']);
 				$route .= '?' . http_build_query($params);
 			}
 			return "$baseUrl/{$route}{$anchor}";
 		} else {
 			$url = "$baseUrl?{$this->routeParam}=$route";
 			if (!empty($params)) {
+				if ($langUnset) unset($params['language']);
 				$url .= '&' . http_build_query($params);
 			}
 			return $url . $anchor;
