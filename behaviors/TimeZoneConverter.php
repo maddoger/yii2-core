@@ -66,6 +66,8 @@ class TimeZoneConverter extends Behavior
 			ActiveRecord::EVENT_AFTER_FIND => 'afterFind',
 			ActiveRecord::EVENT_BEFORE_INSERT => 'beforeSave',
 			ActiveRecord::EVENT_BEFORE_UPDATE => 'beforeSave',
+			ActiveRecord::EVENT_AFTER_INSERT => 'afterFind',
+			ActiveRecord::EVENT_AFTER_UPDATE => 'afterFind',
 		];
 	}
 
@@ -105,7 +107,7 @@ class TimeZoneConverter extends Behavior
 				foreach ($attributes as $attr=>$value) {
 
 					if (is_numeric($value)) {
-						$date = new DateTime('@'.$value, $this->localTimeZone);
+						$date = new DateTime('@'.$value, new \DateTimeZone($this->localTimeZone));
 					} else {
 						$date = new DateTime($value, new \DateTimeZone($this->localTimeZone));
 					}
