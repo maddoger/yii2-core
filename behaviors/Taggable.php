@@ -513,7 +513,7 @@ class Taggable extends Behavior
 				$result = $tag;
 
 			} else {
-				$result = $tagModel::find([$this->tagTableTitle => $tagTitle]);
+				$result = $tagModel::findOne([$this->tagTableTitle => $tagTitle]);
 
 				if ($result === null) {
 					$result = new $tagModelClass();
