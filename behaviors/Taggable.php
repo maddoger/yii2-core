@@ -148,7 +148,7 @@ class Taggable extends Behavior
 	protected $tagsAreLoaded = false;
 
 	/**
-	 * @var \yii\db\ActiveRelationInterface
+	 * @var \yii\db\ActiveQueryInterface
 	 */
 	protected $relation = null;
 
