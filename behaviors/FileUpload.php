@@ -121,8 +121,10 @@ class FileUpload extends Behavior
         ];
     }
 
-    public function beforeSave($insert)
+    public function beforeSave($event)
     {
+        $insert = $event->name == 'beforeInsert';
+
         //Checking emptiness of the attribute
         if (in_array($this->owner->scenario,$this->scenarios)
         ) {
