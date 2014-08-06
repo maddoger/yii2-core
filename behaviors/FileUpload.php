@@ -194,7 +194,8 @@ class FileUpload extends Behavior
                 if (!empty($fileName)) {
 
                     if (!empty($this->types)) {
-                        $valid = strpos(strtolower($this->types), strtolower(pathinfo($fileName, PATHINFO_EXTENSION))) !== false;
+                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                        $valid = $ext && strpos(strtolower($this->types), $ext) !== false;
                     } else {
                         $valid = true;
                     }
