@@ -210,7 +210,7 @@ class FileUpload extends Behavior
 
                             if (ini_get('allow_url_fopen')) {
                                 //try simple
-                                $content = file_get_contents($fileName);
+                                $content = @file_get_contents($fileName);
                             } elseif (function_exists('curl_init')) {
                                 //else curl
                                 $ch = curl_init();
@@ -218,13 +218,13 @@ class FileUpload extends Behavior
                                 curl_setopt($ch, CURLOPT_FAILONERROR, 1);
                                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                                 curl_setopt($ch, CURLOPT_URL, $fileName);
-                                $result = curl_exec($ch);
+                                $result = @curl_exec($ch);
                                 curl_close($ch);
 
                                 $content = $result;
                             }
 
-                            if ($content !== null) {
+                            if ($content) {
 
                                 $ext = ($this->forceExt ? $this->forceExt : pathinfo($fileName, PATHINFO_EXTENSION));
 
