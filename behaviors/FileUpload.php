@@ -131,6 +131,8 @@ class FileUpload extends Behavior
 
             if ($this->file !== null) {
                 $file = $this->file;
+            } elseif ($this->owner->getAttribute($this->attribute) instanceof UploadedFile) {
+                $file = $this->owner->getAttribute($this->attribute);
             } else {
                 $file = UploadedFile::getInstance($this->owner, $this->attribute);
             }
