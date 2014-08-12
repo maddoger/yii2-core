@@ -217,7 +217,7 @@ class FileUpload extends Behavior
                             } elseif (function_exists('curl_init')) {
                                 //else curl
                                 $ch = curl_init();
-                                curl_setopt($ch, CURLOPT_HEADER, 1);
+                                curl_setopt($ch, CURLOPT_HEADER, 0);
                                 curl_setopt($ch, CURLOPT_FAILONERROR, 1);
                                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                                 curl_setopt($ch, CURLOPT_URL, $fileName);
