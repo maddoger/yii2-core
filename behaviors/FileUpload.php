@@ -322,10 +322,13 @@ class FileUpload extends Behavior
 
         $filePath = $url;
 
-        if (strpos($url, $this->directory) !== false) {
-            $filePath = str_replace($this->url, $this->directory, $url);
-        } elseif (substr($url, 0, 1) === '/') {
-            $filePath = Yii::getAlias('@frontendPath' . DIRECTORY_SEPARATOR . substr($url, mb_strlen(Yii::getAlias('@frontendUrl/'))));
+        $realDirectory = Yii::getAlias($this->directory);
+        $realUrl = Yii::getAlias($this->url);
+
+        if (strpos($url, $realDirectory) !== false) {
+            $filePath = str_replace($realUrl, $realDirectory, $url);
+        } else {
+            return null;
         }
 
         return $filePath;
