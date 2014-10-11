@@ -11,6 +11,7 @@ use yii\base\Exception;
 use yii\db\ActiveRecord;
 use yii\helpers\FileHelper;
 use yii\helpers\Inflector;
+use yii\helpers\StringHelper;
 use yii\web\UploadedFile;
 use Yii;
 
@@ -49,11 +50,11 @@ class FileBehavior extends Behavior
     /**
      * @var null|String|callable generator for filename
      *
-     * If its null
+     * If its null original file name will be used.
      * Can be an attribute name for transliterate.
-     * The signature of the function should be the following: `function ($model, $file, $basename, $extension)`.
+     * The signature of the function should be the following: `function ($model, $file, $index)`.
      */
-    public $nameGenerator = null;
+    public $fileName = null;
 
     /**
      * @var bool overwrite if file already exists
@@ -95,13 +96,13 @@ class FileBehavior extends Behavior
     public function attach($owner)
     {
         parent::attach($owner);
-        $folder = Inflector::tableize($this->owner->className()).'/';
+        $folder = Inflector::tableize(StringHelper::basename($this->owner->className()));
 
         if (!$this->basePath) {
             $this->basePath = '@static/uploads/'.$folder;
         }
         if (!$this->baseUrl) {
-            $this->basePath = '@staticUrl/uploads/'.$folder;
+            $this->baseUrl = '@staticUrl/uploads/'.$folder;
         }
     }
 
@@ -119,7 +120,7 @@ class FileBehavior extends Behavior
             ActiveRecord::EVENT_AFTER_INSERT => 'afterSave',
             ActiveRecord::EVENT_AFTER_UPDATE => 'afterSave',
 
-            ActiveRecord::EVENT_BEFORE_DELETE => 'beforeDelete',
+            ActiveRecord::EVENT_AFTER_DELETE => 'afterDelete',
         ];
     }
 
@@ -185,6 +186,20 @@ class FileBehavior extends Behavior
                 throw new Exception('Directory "'.$dir.'" creation error.');
             }
 
+            if (!$this->overwriteFile && file_exists($path)) {
+                for ($index=0; $index<10; $index++) {
+                    $name = $this->generateName($index);
+                    $path = $this->getFilePathInternal($name);
+                    $url = $this->getFileUrlInternal($name);
+                    if (!file_exists($path)) {
+                        break;
+                    }
+                }
+                if (file_exists($path)) {
+                    throw new Exception('File already exists!');
+                }
+            }
+
             if (!$this->file->saveAs($path)) {
                 throw new Exception('File saving error.');
             }
@@ -192,6 +207,7 @@ class FileBehavior extends Behavior
             $this->afterFileSaving();
 
             $this->owner->setOldAttribute($this->attribute, $url);
+            $this->owner->setAttribute($this->attribute, $url);
 
             if (!$this->owner->getDb()->createCommand()->update(
                 $this->owner->tableName(),
@@ -203,6 +219,14 @@ class FileBehavior extends Behavior
                 throw new Exception('Model update failed.');
             }
         }
+    }
+
+    /**
+     * After delete event
+     */
+    public function afterDelete()
+    {
+        $this->deleteFiles();
     }
 
     /**
@@ -273,25 +297,26 @@ class FileBehavior extends Behavior
      * Generate file name
      * @return string
      */
-    protected function generateName()
+    protected function generateName($index=null)
     {
         if ($this->file instanceof UploadedFile) {
             $extension = strtolower($this->file->extension);
-            //$baseName = mb_substr($this->file->baseName, 0, -strlen($extension)+1);
             $baseName = $this->file->baseName;
-            $name = null;
 
-            if ($this->nameGenerator) {
-                if ($this->nameGenerator instanceof \Closure) {
-                    $name = call_user_func($this->nameGenerator, $this->owner, $this, $baseName, $extension);
+            if ($this->fileName) {
+                if ($this->fileName instanceof \Closure) {
+                    $name = call_user_func($this->fileName, $this->owner, $this->file, $index);
                     if ($name) {
                         return $name;
                     }
-                } elseif ($this->owner->hasAttribute($this->nameGenerator)) {
-                    $baseName = $this->owner->{$this->nameGenerator};
+                } elseif ($this->owner->hasAttribute($this->fileName)) {
+                    $baseName = $this->owner->{$this->fileName};
                 }
             }
 
+            if ($index) {
+                $baseName .= '_'.$index;
+            }
             return Inflector::slug($baseName).'.'.$extension;
         }
         return null;
