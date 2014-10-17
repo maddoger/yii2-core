@@ -8,7 +8,6 @@
 namespace maddoger\core;
 
 use Yii;
-use yii\base\DynamicModel;
 use yii\base\Module as BaseModule;
 
 /**
