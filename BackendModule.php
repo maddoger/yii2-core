@@ -92,10 +92,12 @@ class BackendModule extends BaseModule
 
 	/**
 	 * Rules needed for administrator
+     *
+     * Operations must be set before using in roles.
 	 *
 	 * @return array|null
 	 */
-	public function getRbacRoles()
+	public function getRbacItems()
 	{
 		return null;
 	}
