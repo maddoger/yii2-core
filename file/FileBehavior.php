@@ -33,13 +33,13 @@ class FileBehavior extends Behavior
 
     /**
      * @var string Base path for uploading
-     * Defaults to '@static/uploads/[model_table]'
+     * Defaults to '@static/[model_table]'
      */
     public $basePath;
 
     /**
      * @var string Base url for base path
-     * Defaults to '@staticUrl/uploads/[model_table]'
+     * Defaults to '@staticUrl/[model_table]'
      */
     public $baseUrl;
 
@@ -113,10 +113,10 @@ class FileBehavior extends Behavior
         $folder = Inflector::tableize(StringHelper::basename($this->owner->className()));
 
         if (!$this->basePath) {
-            $this->basePath = '@static/uploads/' . $folder;
+            $this->basePath = '@static/' . $folder;
         }
         if (!$this->baseUrl) {
-            $this->baseUrl = '@staticUrl/uploads/' . $folder;
+            $this->baseUrl = '@staticUrl/' . $folder;
         }
     }
 
