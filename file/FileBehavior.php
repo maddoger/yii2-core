@@ -8,6 +8,7 @@ namespace maddoger\core\file;
 
 use yii\base\Behavior;
 use yii\base\Exception;
+use yii\base\ModelEvent;
 use yii\db\ActiveRecord;
 use yii\helpers\FileHelper;
 use yii\helpers\Inflector;
@@ -57,6 +58,19 @@ class FileBehavior extends Behavior
     public $fileName = null;
 
     /**
+     * @var bool use only $_FILES for changing value of attribute.
+     * If is true and file var is exists but empty, old value will be preserved.
+     */
+    public $changeByFileOnly = true;
+
+    /**
+     * @var string delete attribute name
+     * if it is set and its true file will be delete
+     * Default is null.
+     */
+    public $deleteAttribute;
+
+    /**
      * @var bool overwrite if file already exists
      */
     public $overwriteFile = true;
@@ -99,10 +113,10 @@ class FileBehavior extends Behavior
         $folder = Inflector::tableize(StringHelper::basename($this->owner->className()));
 
         if (!$this->basePath) {
-            $this->basePath = '@static/uploads/'.$folder;
+            $this->basePath = '@static/uploads/' . $folder;
         }
         if (!$this->baseUrl) {
-            $this->baseUrl = '@staticUrl/uploads/'.$folder;
+            $this->baseUrl = '@staticUrl/uploads/' . $folder;
         }
     }
 
@@ -137,18 +151,34 @@ class FileBehavior extends Behavior
      */
     public function beforeValidate()
     {
-        if (is_null($this->file)) {
-            $this->file = UploadedFile::getInstance($this->owner, $this->attribute);
-        }
+        if ($this->owner->isAttributeSafe($this->attribute)) {
 
-        if ($this->file instanceof UploadedFile && !$this->file->hasError) {
-            $this->owner->{$this->attribute} = $this->file;
-        } else {
-            $this->file = null;
+            if ($this->owner->{$this->attribute} instanceof UploadedFile) {
+                $this->file = $this->owner->{$this->attribute};
+            }
 
-            //Delete old file if attribute is changed
-            if (($this->owner->{$this->attribute} != $this->oldValue) && $this->deleteOldFile) {
-                $this->deleteFiles();
+            if (is_null($this->file)) {
+                $this->file = UploadedFile::getInstance($this->owner, $this->attribute);
+            }
+
+            if ($this->file instanceof UploadedFile && !$this->file->hasError) {
+                $this->owner->{$this->attribute} = $this->file;
+            } else {
+                $this->file = null;
+
+                if ($this->changeByFileOnly) {
+                    //Reset old value
+                    $this->owner->{$this->attribute} = $this->oldValue;
+                }
+
+                //Delete file using deleteAttribute
+                if ($this->deleteAttribute &&
+                    $this->owner->canGetProperty($this->deleteAttribute) &&
+                    $this->owner->{$this->deleteAttribute}
+                ) {
+                    //Delete
+                    $this->owner->{$this->attribute} = null;
+                }
             }
         }
     }
@@ -160,10 +190,17 @@ class FileBehavior extends Behavior
     {
         if ($this->file instanceof UploadedFile) {
             if ($this->deleteOldFile) {
-                $this->deleteFiles();
+                $this->deleteFileInternal();
             }
             $this->oldValue = null;
             $this->owner->{$this->attribute} = $this->file->baseName . '.' . $this->file->extension;
+        } else {
+
+            //Delete old file if needed
+            if (($this->owner->{$this->attribute} != $this->oldValue) && $this->deleteOldFile) {
+                $this->deleteFileInternal();
+            }
+
         }
     }
 
@@ -183,11 +220,11 @@ class FileBehavior extends Behavior
 
             $dir = dirname($path);
             if (!FileHelper::createDirectory($dir)) {
-                throw new Exception('Directory "'.$dir.'" creation error.');
+                throw new Exception('Directory "' . $dir . '" creation error.');
             }
 
             if (!$this->overwriteFile && file_exists($path)) {
-                for ($index=0; $index<10; $index++) {
+                for ($index = 0; $index < 10; $index++) {
                     $name = $this->generateName($index);
                     $path = $this->getFilePathInternal($name);
                     $url = $this->getFileUrlInternal($name);
@@ -215,7 +252,8 @@ class FileBehavior extends Behavior
                     $this->attribute => $url
                 ],
                 $this->owner->getPrimaryKey(true)
-            )->execute()) {
+            )->execute()
+            ) {
                 throw new Exception('Model update failed.');
             }
         }
@@ -226,7 +264,7 @@ class FileBehavior extends Behavior
      */
     public function afterDelete()
     {
-        $this->deleteFiles();
+        $this->deleteFileInternal();
     }
 
     /**
@@ -234,7 +272,9 @@ class FileBehavior extends Behavior
      */
     public function beforeFileSaving()
     {
-
+        $event = new ModelEvent();
+        $this->owner->trigger('beforeFileSaving', $event);
+        return $event->isValid;
     }
 
     /**
@@ -242,7 +282,9 @@ class FileBehavior extends Behavior
      */
     public function afterFileSaving()
     {
-
+        $event = new ModelEvent();
+        $this->owner->trigger('afterFileSaving', $event);
+        return $event->isValid;
     }
 
     /**
@@ -268,14 +310,33 @@ class FileBehavior extends Behavior
     }
 
     /**
+     * Return path to file in attribute
+     * @param $attribute string attribute name
+     * @return string|null
+     */
+    public function deleteFile($attribute)
+    {
+        foreach ($this->owner->behaviors as $behavior) {
+            if ($behavior instanceof static && $behavior->attribute == $attribute) {
+                /**
+                 * @var behavior static
+                 */
+                $behavior->deleteFileInternal();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Returns file path
      * @param null|string $fileName
      * @return bool|string
      */
-    protected function getFilePathInternal($fileName=null)
+    protected function getFilePathInternal($fileName = null)
     {
         return \Yii::getAlias(
-            rtrim($this->basePath, '/'). '/'.
+            rtrim($this->basePath, '/') . '/' .
             ltrim($fileName ?: $this->generateName(), '/')
         );
     }
@@ -285,19 +346,20 @@ class FileBehavior extends Behavior
      * @param null $fileName
      * @return bool|string
      */
-    protected function getFileUrlInternal($fileName=null)
+    protected function getFileUrlInternal($fileName = null)
     {
         return \Yii::getAlias(
-            rtrim($this->baseUrl, '/'). '/'.
+            rtrim($this->baseUrl, '/') . '/' .
             ltrim($fileName ?: $this->generateName(), '/')
         );
     }
 
     /**
      * Generate file name
+     * @param string $index
      * @return string
      */
-    protected function generateName($index=null)
+    protected function generateName($index = null)
     {
         if ($this->file instanceof UploadedFile) {
             $extension = strtolower($this->file->extension);
@@ -309,15 +371,15 @@ class FileBehavior extends Behavior
                     if ($name) {
                         return $name;
                     }
-                } elseif ($this->owner->hasAttribute($this->fileName)) {
+                } elseif ($this->owner->canGetProperty($this->fileName)) {
                     $baseName = $this->owner->{$this->fileName};
                 }
             }
 
             if ($index) {
-                $baseName .= '_'.$index;
+                $baseName .= '_' . $index;
             }
-            return Inflector::slug($baseName).'.'.$extension;
+            return Inflector::slug($baseName) . '.' . $extension;
         }
         return null;
     }
@@ -325,7 +387,7 @@ class FileBehavior extends Behavior
     /**
      * Delete old files
      */
-    protected function deleteFiles()
+    protected function deleteFileInternal()
     {
         if ($this->oldValue) {
             $filePath = str_replace(
@@ -337,8 +399,7 @@ class FileBehavior extends Behavior
                 if (is_file($filePath)) {
                     unlink($filePath);
                 }
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
 
             }
             $this->oldValue = null;
