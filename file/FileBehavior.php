@@ -215,8 +215,8 @@ class FileBehavior extends Behavior
             $this->beforeFileSaving();
 
             $name = $this->generateName();
-            $path = $this->getFilePathInternal($name);
-            $url = $this->getFileUrlInternal($name);
+            $path = $this->generateFilePathInternal($name);
+            $url = $this->generateFileUrlInternal($name);
 
             $dir = dirname($path);
             if (!FileHelper::createDirectory($dir)) {
@@ -226,8 +226,8 @@ class FileBehavior extends Behavior
             if (!$this->overwriteFile && file_exists($path)) {
                 for ($index = 0; $index < 10; $index++) {
                     $name = $this->generateName($index);
-                    $path = $this->getFilePathInternal($name);
-                    $url = $this->getFileUrlInternal($name);
+                    $path = $this->generateFilePathInternal($name);
+                    $url = $this->generateFileUrlInternal($name);
                     if (!file_exists($path)) {
                         break;
                     }
@@ -245,6 +245,9 @@ class FileBehavior extends Behavior
 
             $this->owner->setOldAttribute($this->attribute, $url);
             $this->owner->setAttribute($this->attribute, $url);
+
+            $this->oldValue = $url;
+            $this->file = null;
 
             if (!$this->owner->getDb()->createCommand()->update(
                 $this->owner->tableName(),
@@ -294,16 +297,10 @@ class FileBehavior extends Behavior
      */
     public function getFilePath($attribute)
     {
-        foreach ($this->owner->behaviors as $behavior) {
-            if ($behavior instanceof static && $behavior->attribute == $attribute) {
-                /**
-                 * @var behavior static
-                 */
-                return str_replace(
-                    \Yii::getAlias($behavior->baseUrl),
-                    \Yii::getAlias($behavior->basePath),
-                    $behavior->oldValue);
-            }
+        $behavior = $this->getBehaviorByAttribute($attribute);
+        if ($behavior) {
+            $url = (is_string($this->owner->{$attribute})) ? $this->owner->{$attribute} : $behavior->oldValue;
+            return $this->getFilePathFromUrl($url);
         }
 
         return null;
@@ -316,15 +313,25 @@ class FileBehavior extends Behavior
      */
     public function deleteFile($attribute)
     {
+        $behavior = $this->getBehaviorByAttribute($attribute);
+        if ($behavior) {
+            $behavior->deleteFileInternal();
+        }
+        return null;
+    }
+
+    /**
+     * Returns FileBehavior by attribute
+     * @param $attribute
+     * @return static
+     */
+    protected function getBehaviorByAttribute($attribute)
+    {
         foreach ($this->owner->behaviors as $behavior) {
             if ($behavior instanceof static && $behavior->attribute == $attribute) {
-                /**
-                 * @var behavior static
-                 */
-                $behavior->deleteFileInternal();
+                return $behavior;
             }
         }
-
         return null;
     }
 
@@ -333,7 +340,7 @@ class FileBehavior extends Behavior
      * @param null|string $fileName
      * @return bool|string
      */
-    protected function getFilePathInternal($fileName = null)
+    protected function generateFilePathInternal($fileName = null)
     {
         return \Yii::getAlias(
             rtrim($this->basePath, '/') . '/' .
@@ -346,7 +353,7 @@ class FileBehavior extends Behavior
      * @param null $fileName
      * @return bool|string
      */
-    protected function getFileUrlInternal($fileName = null)
+    protected function generateFileUrlInternal($fileName = null)
     {
         return \Yii::getAlias(
             rtrim($this->baseUrl, '/') . '/' .
@@ -385,15 +392,25 @@ class FileBehavior extends Behavior
     }
 
     /**
+     * Returns possible file path from url, but not checks its existence.
+     * @param $url
+     * @return mixed
+     */
+    protected function getFilePathFromUrl($url)
+    {
+        return str_replace(
+            \Yii::getAlias($this->baseUrl),
+            \Yii::getAlias($this->basePath),
+            $url);
+    }
+
+    /**
      * Delete old files
      */
     protected function deleteFileInternal()
     {
         if ($this->oldValue) {
-            $filePath = str_replace(
-                \Yii::getAlias($this->baseUrl),
-                \Yii::getAlias($this->basePath),
-                $this->oldValue);
+            $filePath = $this->getFilePathFromUrl($this->oldValue);
 
             try {
                 if (is_file($filePath)) {
