@@ -21,7 +21,7 @@ use Yii;
  *
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  * @link http://syrchikov.name
- * @package maddoger\core
+ * @package maddoger/yii2-core
  *
  */
 class FileBehavior extends Behavior

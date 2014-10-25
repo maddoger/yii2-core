@@ -15,7 +15,7 @@ use yii\base\Module as BaseModule;
  *
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
  * @link http://syrchikov.name
- * @package maddoger\core
+ * @package maddoger/yii2-core
  *
  */
 class BackendModule extends BaseModule
