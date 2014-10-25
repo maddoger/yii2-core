@@ -74,123 +74,6 @@ class DateTimeBehavior extends Behavior
      */
     public $attributeValues = [];
 
-
-    public function init()
-    {
-        if (is_null($this->formatter))
-            $this->formatter = \Yii::$app->formatter;
-        elseif (is_array($this->formatter))
-            $this->formatter = \Yii::createObject($this->formatter);
-
-
-        if (!$this->localTimeZone) {
-            $this->localTimeZone = \Yii::$app->timeZone;
-        }
-
-        $this->prepareAttributes();
-    }
-
-    public function events()
-    {
-        $events = [];
-        if ($this->performValidation) {
-            $events[BaseActiveRecord::EVENT_BEFORE_VALIDATE] = 'onBeforeValidate';
-        }
-        return $events;
-    }
-
-    /**
-     * Performs validation for all the attributes
-     * @param Event $event
-     */
-    public function onBeforeValidate($event)
-    {
-        foreach ($this->attributeValues as $name => $value) {
-
-            $validator = \Yii::createObject([
-                'class' => DateValidator::className(),
-                'format' => $value->localFormat[1],
-            ]);
-            $validator->validateAttribute($this->owner, $value->localAttribute);
-        }
-    }
-
-    protected function prepareAttributes()
-    {
-        foreach ($this->attributes as $key => $value) {
-            $config = $this->attributeConfig;
-            $config['originalFormat'] = $this->originalFormat;
-            $config['localFormat'] = $this->localFormat;
-
-            $config['originalTimeZone'] = $this->originalTimeZone;
-            $config['localTimeZone'] = $this->localTimeZone;
-
-            if (is_integer($key)) {
-                $originalAttribute = $value;
-                $localAttribute = $this->processTemplate($originalAttribute);
-            } else {
-                $originalAttribute = $key;
-                if (is_string($value)) {
-                    $localAttribute = $value;
-                } else {
-                    $localAttribute = ArrayHelper::remove($value, 'localAttribute', $this->processTemplate($originalAttribute));
-                    $config = array_merge($config, $value);
-                }
-            }
-            $config['behavior'] = $this;
-            $config['originalAttribute'] = $originalAttribute;
-            $config['localAttribute'] = $localAttribute;
-
-            $this->attributeValues[$localAttribute] = \Yii::createObject($config);
-        }
-    }
-
-    protected function processTemplate($originalAttribute)
-    {
-        return strtr($this->namingTemplate, [
-            '{attribute}' => $originalAttribute,
-        ]);
-    }
-
-    public function canGetProperty($name, $checkVars = true)
-    {
-        if ($this->hasAttributeValue($name))
-            return true;
-        else
-            return parent::canGetProperty($name, $checkVars);
-    }
-
-    protected function hasAttributeValue($name)
-    {
-        return isset($this->attributeValues[$name]);
-    }
-
-    public function canSetProperty($name, $checkVars = true)
-    {
-        if ($this->hasAttributeValue($name))
-            return true;
-        else
-            return parent::canSetProperty($name, $checkVars);
-    }
-
-    public function __get($name)
-    {
-        if ($this->hasAttributeValue($name)) {
-            return $this->attributeValues[$name];
-        } else {
-            return parent::__get($name);
-        }
-    }
-
-    public function __set($name, $value)
-    {
-        if ($this->hasAttributeValue($name)) {
-            $this->attributeValues[$name]->setValue($value);
-        } else {
-            parent::__set($name, $value);
-        }
-    }
-
     /**
      * @param string|array $format
      * @param Formatter $formatter
@@ -235,5 +118,121 @@ class DateTimeBehavior extends Behavior
             }
         }
         return $format;
+    }
+
+    public function init()
+    {
+        if (is_null($this->formatter))
+            $this->formatter = \Yii::$app->formatter;
+        elseif (is_array($this->formatter))
+            $this->formatter = \Yii::createObject($this->formatter);
+
+
+        if (!$this->localTimeZone) {
+            $this->localTimeZone = \Yii::$app->timeZone;
+        }
+
+        $this->prepareAttributes();
+    }
+
+    protected function prepareAttributes()
+    {
+        foreach ($this->attributes as $key => $value) {
+            $config = $this->attributeConfig;
+            $config['originalFormat'] = $this->originalFormat;
+            $config['localFormat'] = $this->localFormat;
+
+            $config['originalTimeZone'] = $this->originalTimeZone;
+            $config['localTimeZone'] = $this->localTimeZone;
+
+            if (is_integer($key)) {
+                $originalAttribute = $value;
+                $localAttribute = $this->processTemplate($originalAttribute);
+            } else {
+                $originalAttribute = $key;
+                if (is_string($value)) {
+                    $localAttribute = $value;
+                } else {
+                    $localAttribute = ArrayHelper::remove($value, 'localAttribute', $this->processTemplate($originalAttribute));
+                    $config = array_merge($config, $value);
+                }
+            }
+            $config['behavior'] = $this;
+            $config['originalAttribute'] = $originalAttribute;
+            $config['localAttribute'] = $localAttribute;
+
+            $this->attributeValues[$localAttribute] = \Yii::createObject($config);
+        }
+    }
+
+    protected function processTemplate($originalAttribute)
+    {
+        return strtr($this->namingTemplate, [
+            '{attribute}' => $originalAttribute,
+        ]);
+    }
+
+    public function events()
+    {
+        $events = [];
+        if ($this->performValidation) {
+            $events[BaseActiveRecord::EVENT_BEFORE_VALIDATE] = 'onBeforeValidate';
+        }
+        return $events;
+    }
+
+    /**
+     * Performs validation for all the attributes
+     * @param Event $event
+     */
+    public function onBeforeValidate($event)
+    {
+        foreach ($this->attributeValues as $name => $value) {
+
+            $validator = \Yii::createObject([
+                'class' => DateValidator::className(),
+                'format' => $value->localFormat[1],
+            ]);
+            $validator->validateAttribute($this->owner, $value->localAttribute);
+        }
+    }
+
+    public function canGetProperty($name, $checkVars = true)
+    {
+        if ($this->hasAttributeValue($name))
+            return true;
+        else
+            return parent::canGetProperty($name, $checkVars);
+    }
+
+    protected function hasAttributeValue($name)
+    {
+        return isset($this->attributeValues[$name]);
+    }
+
+    public function canSetProperty($name, $checkVars = true)
+    {
+        if ($this->hasAttributeValue($name))
+            return true;
+        else
+            return parent::canSetProperty($name, $checkVars);
+    }
+
+    public function __get($name)
+    {
+        if ($this->hasAttributeValue($name)) {
+            return $this->attributeValues[$name];
+        } else {
+            return parent::__get($name);
+        }
+    }
+
+    public function __set($name, $value)
+    {
+        if ($this->hasAttributeValue($name)) {
+            $this->attributeValues[$name]->setValue($value);
+        } else {
+            parent::__set($name, $value);
+        }
     }
 } 

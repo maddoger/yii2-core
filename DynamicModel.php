@@ -5,6 +5,7 @@
  */
 
 namespace maddoger\core;
+
 use Yii;
 
 /**

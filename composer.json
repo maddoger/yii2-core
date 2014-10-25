@@ -1,8 +1,8 @@
 {
-	"name": "maddoger/yii2-core",
-	"type": "yii2-extension",
-	"description": "Core extension for Yii2.",
-	"authors": [
+    "name": "maddoger/yii2-core",
+    "type": "yii2-extension",
+    "description": "Core extension for Yii2.",
+    "authors": [
         {
             "name": "Vitaliy Syrchikov",
             "email": "maddoger@gmail.com"
@@ -13,9 +13,9 @@
         "php": ">=5.4.0",
         "yiisoft/yii2": "*"
     },
-	"autoload": {
-		"psr-4": {
-			"maddoger\\core\\": ""
-		}
-	}
+    "autoload": {
+        "psr-4": {
+            "maddoger\\core\\": ""
+        }
+    }
 }
