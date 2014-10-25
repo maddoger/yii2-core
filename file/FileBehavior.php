@@ -130,10 +130,8 @@ class FileBehavior extends Behavior
             ActiveRecord::EVENT_BEFORE_VALIDATE => 'beforeValidate',
             ActiveRecord::EVENT_BEFORE_INSERT => 'beforeSave',
             ActiveRecord::EVENT_BEFORE_UPDATE => 'beforeSave',
-
             ActiveRecord::EVENT_AFTER_INSERT => 'afterSave',
             ActiveRecord::EVENT_AFTER_UPDATE => 'afterSave',
-
             ActiveRecord::EVENT_AFTER_DELETE => 'afterDelete',
         ];
     }
@@ -205,38 +203,6 @@ class FileBehavior extends Behavior
     }
 
     /**
-     * Delete old files
-     */
-    protected function deleteFileInternal()
-    {
-        if ($this->oldValue) {
-            $filePath = $this->getFilePathFromUrl($this->oldValue);
-
-            try {
-                if (is_file($filePath)) {
-                    unlink($filePath);
-                }
-            } catch (\Exception $e) {
-
-            }
-            $this->oldValue = null;
-        }
-    }
-
-    /**
-     * Returns possible file path from url, but not checks its existence.
-     * @param $url
-     * @return mixed
-     */
-    protected function getFilePathFromUrl($url)
-    {
-        return str_replace(
-            \Yii::getAlias($this->baseUrl),
-            \Yii::getAlias($this->basePath),
-            $url);
-    }
-
-    /**
      * After save event.
      * @throws Exception
      */
@@ -295,6 +261,44 @@ class FileBehavior extends Behavior
     }
 
     /**
+     * After delete event
+     */
+    public function afterDelete()
+    {
+        $this->deleteFileInternal();
+    }
+
+    /**
+     * Return path to file in attribute
+     * @param $attribute string attribute name
+     * @return string|null
+     */
+    public function getFilePath($attribute)
+    {
+        $behavior = $this->getBehaviorByAttribute($attribute);
+        if ($behavior) {
+            $url = (is_string($this->owner->{$attribute})) ? $this->owner->{$attribute} : $behavior->oldValue;
+            return $this->getFilePathFromUrl($url);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return path to file in attribute
+     * @param $attribute string attribute name
+     * @return string|null
+     */
+    public function deleteFile($attribute)
+    {
+        $behavior = $this->getBehaviorByAttribute($attribute);
+        if ($behavior) {
+            $behavior->deleteFileInternal();
+        }
+        return null;
+    }
+
+    /**
      * Event before file saving
      */
     public function beforeFileSaving()
@@ -302,6 +306,29 @@ class FileBehavior extends Behavior
         $event = new ModelEvent();
         $this->owner->trigger('beforeFileSaving', $event);
         return $event->isValid;
+    }
+
+    /**
+     * Event
+     */
+    public function afterFileSaving()
+    {
+        $event = new ModelEvent();
+        $this->owner->trigger('afterFileSaving', $event);
+        return $event->isValid;
+    }
+
+    /**
+     * Returns possible file path from url, but not checks its existence.
+     * @param $url
+     * @return mixed
+     */
+    protected function getFilePathFromUrl($url)
+    {
+        return str_replace(
+            \Yii::getAlias($this->baseUrl),
+            \Yii::getAlias($this->basePath),
+            $url);
     }
 
     /**
@@ -361,40 +388,6 @@ class FileBehavior extends Behavior
     }
 
     /**
-     * Event
-     */
-    public function afterFileSaving()
-    {
-        $event = new ModelEvent();
-        $this->owner->trigger('afterFileSaving', $event);
-        return $event->isValid;
-    }
-
-    /**
-     * After delete event
-     */
-    public function afterDelete()
-    {
-        $this->deleteFileInternal();
-    }
-
-    /**
-     * Return path to file in attribute
-     * @param $attribute string attribute name
-     * @return string|null
-     */
-    public function getFilePath($attribute)
-    {
-        $behavior = $this->getBehaviorByAttribute($attribute);
-        if ($behavior) {
-            $url = (is_string($this->owner->{$attribute})) ? $this->owner->{$attribute} : $behavior->oldValue;
-            return $this->getFilePathFromUrl($url);
-        }
-
-        return null;
-    }
-
-    /**
      * Returns FileBehavior by attribute
      * @param $attribute
      * @return static
@@ -410,16 +403,22 @@ class FileBehavior extends Behavior
     }
 
     /**
-     * Return path to file in attribute
-     * @param $attribute string attribute name
-     * @return string|null
+     * Delete old files
      */
-    public function deleteFile($attribute)
+    protected function deleteFileInternal()
     {
-        $behavior = $this->getBehaviorByAttribute($attribute);
-        if ($behavior) {
-            $behavior->deleteFileInternal();
+        if ($this->oldValue) {
+            $filePath = $this->getFilePathFromUrl($this->oldValue);
+
+            try {
+                if (is_file($filePath)) {
+                    unlink($filePath);
+                }
+            } catch (\Exception $e) {
+
+            }
+            $this->oldValue = null;
         }
-        return null;
     }
+
 }
