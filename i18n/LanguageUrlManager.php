@@ -1,6 +1,6 @@
 <?php
 
-namespace maddoger\core;
+namespace maddoger\core\i18n;
 
 use Yii;
 use yii\web\UrlManager;

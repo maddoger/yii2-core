@@ -4,7 +4,7 @@
  * @link http://syrchikov.name
  */
 
-namespace maddoger\core\Translatable;
+namespace maddoger\core\i18n;
 
 use Yii;
 use yii\base\Behavior;
@@ -147,7 +147,7 @@ class TranslatableBehavior extends Behavior
      */
     public function setLanguage($value)
     {
-        $value = strtolower($value);
+        //$value = strtolower($value);
         if (!isset($this->_models[$value])) {
             $this->_models[$value] = $this->loadTranslation($value);
         }
