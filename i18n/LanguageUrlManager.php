@@ -8,19 +8,19 @@ use yii\web\UrlRule;
 
 class LanguageUrlManager extends UrlManager
 {
-    public $avaliableLanguages = [];
+    public $availableLanguages = [];
 
     public function parseRequest($request)
     {
-        if (count($this->avaliableLanguages) > 0) {
-            if (preg_match('/\/(' . implode('|', $this->avaliableLanguages) . ')(.*)/si', $request->url, $matches)) {
+        if (count($this->availableLanguages) > 0) {
+            if (preg_match('/\/(' . implode('|', $this->availableLanguages) . ')(.*)/si', $request->url, $matches)) {
                 Yii::$app->language = $matches[1];
             }
         }
 
         $res = parent::parseRequest($request);
         if (is_array($res)) {
-            if (isset($res[1]['language']) && in_array($res[1]['language'], $this->avaliableLanguages)) {
+            if (isset($res[1]['language']) && in_array($res[1]['language'], $this->availableLanguages)) {
                 Yii::$app->language = $res[1]['language'];
             }
         }

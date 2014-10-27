@@ -245,10 +245,8 @@ class TranslatableBehavior extends Behavior
      */
     public function hasTranslation($language = null)
     {
-        if ($language === null) {
-            $language = $this->getLanguage();
-        }
-        return (isset($this->_models[$language]) && !$this->_models[$language]->isNewRecord);
+        $translation = $this->getTranslation($language);
+        return $translation && !$translation->isNewRecord;
     }
 
     /**
