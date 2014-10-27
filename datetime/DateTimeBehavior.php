@@ -42,7 +42,7 @@ class DateTimeBehavior extends Behavior
     /**
      * @var string
      */
-    public $originalTimeZone = 'UTC';
+    public $originalTimeZone;
 
     /**
      * @var string|array
@@ -127,7 +127,9 @@ class DateTimeBehavior extends Behavior
         elseif (is_array($this->formatter))
             $this->formatter = \Yii::createObject($this->formatter);
 
-
+        if (!$this->originalTimeZone) {
+            $this->originalTimeZone = \Yii::$app->timeZone;
+        }
         if (!$this->localTimeZone) {
             $this->localTimeZone = \Yii::$app->timeZone;
         }
