@@ -35,7 +35,13 @@ class TranslatableBehavior extends Behavior
     /**
      * @var string the language field used in the related table. Determines the language to query | save.
      */
-    public $languageField = 'language';
+    public $languageAttribute = 'language';
+
+    /**
+     * @var string the default language field from main model
+     * Example: 'default_language'
+     */
+    public $defaultLanguageAttribute;
 
     /**
      * @var array the list of attributes to translate. You can add validation rules on the owner.
@@ -129,7 +135,7 @@ class TranslatableBehavior extends Behavior
      */
     public function afterInsert($event)
     {
-        $this->saveTranslation();
+        $this->saveTranslations();
     }
 
     /**
@@ -137,7 +143,7 @@ class TranslatableBehavior extends Behavior
      */
     public function afterUpdate($event)
     {
-        $this->saveTranslation();
+        $this->saveTranslations();
     }
 
     /**
@@ -161,9 +167,33 @@ class TranslatableBehavior extends Behavior
     public function getLanguage()
     {
         if ($this->_language === null) {
-            $this->_language = Yii::$app->language;
+            if ($this->defaultLanguageAttribute) {
+                $this->_language = $this->owner->{$this->defaultLanguageAttribute};
+            }
+            //var_dump($this->owner->{$this->defaultLanguageAttribute}, $this->_language);
+            if (!$this->_language) {
+                $this->_language = Yii::$app->language;
+            }
         }
         return $this->_language;
+    }
+
+    /**
+     * @param string $attribute
+     * @return mixed
+     */
+    public function getTranslationAttribute($attribute)
+    {
+        return $this->{$attribute};
+    }
+
+    /**
+     * @param string $attribute
+     * @param mixed $value
+     */
+    public function setTranslationAttribute($attribute, $value)
+    {
+        $this->{$attribute} = $value;
     }
 
     /**
@@ -181,7 +211,44 @@ class TranslatableBehavior extends Behavior
         $relation = $this->owner->getRelation($this->relation);
         $model->{key($relation->link)} = $this->owner->getPrimaryKey();
         return $model->save();
+    }
 
+    /**
+     * Saves all translations models
+     * @return bool
+     */
+    public function saveTranslations()
+    {
+        $res = true;
+        foreach ($this->_models as $model) {
+            $dirty = $model->getDirtyAttributes();
+            if (empty($dirty)) {
+                continue;
+            }
+            /** @var \yii\db\ActiveQuery $relation */
+            $relation = $this->owner->getRelation($this->relation);
+            $model->{key($relation->link)} = $this->owner->getPrimaryKey();
+            if (!$model->save())
+            {
+                $res = false;
+            }
+        }
+        return $res;
+    }
+
+    /**
+     * Model has translation to the language
+     *
+     * @param string|null $language the language to return. If null, current sys language
+     *
+     * @return bool
+     */
+    public function hasTranslation($language = null)
+    {
+        if ($language === null) {
+            $language = $this->getLanguage();
+        }
+        return (isset($this->_models[$language]) && !$this->_models[$language]->isNewRecord);
     }
 
     /**
@@ -241,13 +308,13 @@ class TranslatableBehavior extends Behavior
         $class = $relation->modelClass;
         if ($this->owner->getPrimarykey()) {
             $translation = $class::findOne(
-                [$this->languageField => $language, key($relation->link) => $this->owner->getPrimarykey()]
+                [$this->languageAttribute => $language, key($relation->link) => $this->owner->getPrimarykey()]
             );
         }
         if ($translation === null) {
             $translation = new $class;
             $translation->{key($relation->link)} = $this->owner->getPrimaryKey();
-            $translation->{$this->languageField} = $language;
+            $translation->{$this->languageAttribute} = $language;
         }
 
         return $translation;
@@ -263,11 +330,11 @@ class TranslatableBehavior extends Behavior
         if (isset($aRelated[$this->relation]) && $aRelated[$this->relation] != null) {
             if (is_array($aRelated[$this->relation])) {
                 foreach ($aRelated[$this->relation] as $model) {
-                    $this->_models[$model->getAttribute($this->languageField)] = $model;
+                    $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
                 }
             } else {
                 $model = $aRelated[$this->relation];
-                $this->_models[$model->getAttribute($this->languageField)] = $model;
+                $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
             }
         }
     }
