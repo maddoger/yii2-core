@@ -42,7 +42,7 @@ class DateTimeBehavior extends Behavior
     /**
      * @var string
      */
-    public $originalTimeZone;
+    public $originalTimeZone = 'UTC';
 
     /**
      * @var string|array
