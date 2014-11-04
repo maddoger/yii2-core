@@ -7,6 +7,7 @@
 
 namespace maddoger\core\datetime;
 
+use Yii;
 use yii\base\Behavior;
 use yii\base\Event;
 use yii\base\InvalidParamException;
@@ -15,29 +16,37 @@ use yii\helpers\ArrayHelper;
 use yii\i18n\Formatter;
 use yii\validators\DateValidator;
 
-
 /**
  * Class DateTimeBehavior
+ *
  */
 class DateTimeBehavior extends Behavior
 {
     /**
-     * @var string
+     * @var array of attributes names
      */
-    public $namingTemplate = '{attribute}_local';
+    public $attributes = [];
+
     /**
      * @var Formatter
      */
     public $formatter;
+
+    /**
+     * @var string
+     * If this property is not set, [[\yii\base\Application::timeZone]] will be used.
+     */
+    public $timeZone;
+
     /**
      * @var string|array
-     * Defaults to ['datetime', 'yyyy-MM-dd HH:mm:ss']
-     * Your can use:
-     * 'datetime' for ['datetime', 'yyyy-MM-dd HH:mm:ss']
-     * 'date' for ['date', 'yyyy-MM-dd']
-     * 'time' for ['time', 'HH:mm:ss']
      */
-    public $originalFormat = 'datetime';
+    public $format = 'datetime';
+
+    /**
+     * @var string
+     */
+    public $originalFormat = 'U';
 
     /**
      * @var string
@@ -45,24 +54,14 @@ class DateTimeBehavior extends Behavior
     public $originalTimeZone = 'UTC';
 
     /**
-     * @var string|array
+     * @var array
      */
-    public $localFormat = 'datetime';
+    public $attributeConfig = ['class' => 'app\components\datetime\DateTimeAttribute'];
 
     /**
      * @var string
-     * If this property is not set, [[\yii\base\Application::timeZone]] will be used.
      */
-    public $localTimeZone;
-
-    /**
-     * @var array
-     */
-    public $attributes = [];
-    /**
-     * @var array
-     */
-    public $attributeConfig = ['class' => 'maddoger\core\datetime\DateTimeAttribute'];
+    public $namingTemplate = '{attribute}_local';
 
     /**
      * @var bool
@@ -76,62 +75,42 @@ class DateTimeBehavior extends Behavior
 
     /**
      * @param string|array $format
-     * @param Formatter $formatter
      * @throws InvalidParamException
      * @return array|string
      */
-    public static function normalizeOriginalFormat($format, $formatter)
+    public function normalizeFormat($format)
     {
         if (is_string($format)) {
             switch ($format) {
                 case 'date':
-                    return ['date', 'yyyy-MM-dd'];
+                    return ['date', $this->formatter->dateFormat];
                 case 'time':
-                    return ['time', 'yyyy-MM-dd'];
+                    return ['time', $this->formatter->timeFormat];
                 case 'datetime':
-                    return ['datetime', 'yyyy-MM-dd HH:mm:ss'];
+                    return ['datetime', $this->formatter->datetimeFormat];
                 default:
-                    throw new InvalidParamException('$originalFormat has incorrect value');
+                    throw new InvalidParamException('$format has incorrect value');
             }
         }
         return $format;
     }
 
     /**
-     * @param string|array $format
-     * @param Formatter $formatter
-     * @throws InvalidParamException
-     * @return array|string
+     * @inheritdoc
+     * @throws \yii\base\InvalidConfigException
      */
-    public static function normalizeLocalFormat($format, $formatter)
-    {
-        if (is_string($format)) {
-            switch ($format) {
-                case 'date':
-                    return ['date', $formatter->dateFormat];
-                case 'time':
-                    return ['time', $formatter->timeFormat];
-                case 'datetime':
-                    return ['datetime', $formatter->datetimeFormat];
-                default:
-                    throw new InvalidParamException('$localFormat has incorrect value');
-            }
-        }
-        return $format;
-    }
-
     public function init()
     {
-        if (is_null($this->formatter))
-            $this->formatter = \Yii::$app->formatter;
-        elseif (is_array($this->formatter))
-            $this->formatter = \Yii::createObject($this->formatter);
+        parent::init();
 
-        if (!$this->originalTimeZone) {
-            $this->originalTimeZone = \Yii::$app->timeZone;
+        if (is_null($this->formatter)) {
+            $this->formatter = Yii::$app->formatter;
+        } elseif (is_array($this->formatter)) {
+            $this->formatter = Yii::createObject($this->formatter);
         }
-        if (!$this->localTimeZone) {
-            $this->localTimeZone = \Yii::$app->timeZone;
+
+        if (!$this->timeZone) {
+            $this->timeZone = Yii::$app->timeZone;
         }
 
         $this->prepareAttributes();
@@ -141,11 +120,10 @@ class DateTimeBehavior extends Behavior
     {
         foreach ($this->attributes as $key => $value) {
             $config = $this->attributeConfig;
+            $config['localTimeZone'] = $this->timeZone;
+            $config['localFormat'] = $this->normalizeFormat($this->format);
             $config['originalFormat'] = $this->originalFormat;
-            $config['localFormat'] = $this->localFormat;
-
             $config['originalTimeZone'] = $this->originalTimeZone;
-            $config['localTimeZone'] = $this->localTimeZone;
 
             if (is_integer($key)) {
                 $originalAttribute = $value;
@@ -155,7 +133,8 @@ class DateTimeBehavior extends Behavior
                 if (is_string($value)) {
                     $localAttribute = $value;
                 } else {
-                    $localAttribute = ArrayHelper::remove($value, 'localAttribute', $this->processTemplate($originalAttribute));
+                    $localAttribute = ArrayHelper::remove($value, 'localAttribute',
+                        $this->processTemplate($originalAttribute));
                     $config = array_merge($config, $value);
                 }
             }
@@ -163,10 +142,13 @@ class DateTimeBehavior extends Behavior
             $config['originalAttribute'] = $originalAttribute;
             $config['localAttribute'] = $localAttribute;
 
-            $this->attributeValues[$localAttribute] = \Yii::createObject($config);
+            $this->attributeValues[$localAttribute] = Yii::createObject($config);
         }
     }
 
+    /**
+     * @inheritdoc
+     */
     protected function processTemplate($originalAttribute)
     {
         return strtr($this->namingTemplate, [
@@ -174,6 +156,9 @@ class DateTimeBehavior extends Behavior
         ]);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function events()
     {
         $events = [];
@@ -191,7 +176,7 @@ class DateTimeBehavior extends Behavior
     {
         foreach ($this->attributeValues as $name => $value) {
 
-            $validator = \Yii::createObject([
+            $validator = Yii::createObject([
                 'class' => DateValidator::className(),
                 'format' => $value->localFormat[1],
             ]);
@@ -199,27 +184,33 @@ class DateTimeBehavior extends Behavior
         }
     }
 
+    /**
+     * @inheritdoc
+     */
     public function canGetProperty($name, $checkVars = true)
     {
-        if ($this->hasAttributeValue($name))
+        if ($this->hasAttributeValue($name)) {
             return true;
-        else
+        } else {
             return parent::canGetProperty($name, $checkVars);
+        }
     }
 
-    protected function hasAttributeValue($name)
-    {
-        return isset($this->attributeValues[$name]);
-    }
-
+    /**
+     * @inheritdoc
+     */
     public function canSetProperty($name, $checkVars = true)
     {
-        if ($this->hasAttributeValue($name))
+        if ($this->hasAttributeValue($name)) {
             return true;
-        else
+        } else {
             return parent::canSetProperty($name, $checkVars);
+        }
     }
 
+    /**
+     * @inheritdoc
+     */
     public function __get($name)
     {
         if ($this->hasAttributeValue($name)) {
@@ -229,6 +220,9 @@ class DateTimeBehavior extends Behavior
         }
     }
 
+    /**
+     * @inheritdoc
+     */
     public function __set($name, $value)
     {
         if ($this->hasAttributeValue($name)) {
@@ -236,5 +230,13 @@ class DateTimeBehavior extends Behavior
         } else {
             parent::__set($name, $value);
         }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function hasAttributeValue($name)
+    {
+        return isset($this->attributeValues[$name]);
     }
 } 

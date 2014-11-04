@@ -9,18 +9,17 @@ namespace maddoger\core\datetime;
 
 use yii\helpers\FormatConverter;
 
-
 /**
  * Class DatePickerConfig
  */
-class JuiDatePickerConfig
+class DatePickerConfig
 {
     /**
      * @param DateTimeAttribute $attribute
      * @param string $datePickerClass
      * @return array
      */
-    public static function get($attribute, $datePickerClass = 'yii\jui\DatePicker')
+    public static function jui($attribute, $datePickerClass = 'yii\jui\DatePicker')
     {
         $format = $attribute->localFormat;
         switch ($datePickerClass) {

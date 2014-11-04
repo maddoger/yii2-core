@@ -7,9 +7,11 @@
 
 namespace maddoger\core\datetime;
 
+use DateTime;
+use DateTimeZone;
+use Yii;
 use yii\base\Object;
 use yii\helpers\FormatConverter;
-
 
 /**
  * Class DateTimeAttribute
@@ -26,12 +28,12 @@ class DateTimeAttribute extends Object
      */
     public $originalAttribute;
     /**
-     * @var string|array
+     * @var string
      */
     public $originalFormat;
 
     /**
-     * @var string|\IntlTimeZone|\DateTimeZone
+     * @var string
      */
     public $originalTimeZone;
 
@@ -46,24 +48,24 @@ class DateTimeAttribute extends Object
     public $localFormat;
 
     /**
-     * @var string|\IntlTimeZone|\DateTimeZone
+     * @var string
      */
     public $localTimeZone;
 
-    protected $_originalFormatPhp;
+    /**
+     * @var string
+     */
     protected $_localFormatPhp;
+
+    /**
+     * @var string
+     */
     protected $_value;
 
     public function init()
     {
         parent::init();
 
-        $this->originalFormat = DateTimeBehavior::normalizeOriginalFormat($this->originalFormat, $this->behavior->formatter);
-        $this->localFormat = DateTimeBehavior::normalizeLocalFormat($this->localFormat, $this->behavior->formatter);
-
-        if (!$this->_originalFormatPhp) {
-            $this->_originalFormatPhp = FormatConverter::convertDateIcuToPhp($this->originalFormat[1], $this->originalFormat[0]);
-        }
         if (!$this->_localFormatPhp) {
             $this->_localFormatPhp = FormatConverter::convertDateIcuToPhp($this->localFormat[1], $this->localFormat[0]);
         }
@@ -86,15 +88,15 @@ class DateTimeAttribute extends Object
             return $this->_value;
         }
 
-        $datetime = \DateTime::createFromFormat(
-            $this->_originalFormatPhp,
+        $datetime = DateTime::createFromFormat(
+            $this->originalFormat,
             $this->behavior->owner->{$this->originalAttribute},
-            new \DateTimeZone($this->originalTimeZone)
+            new DateTimeZone($this->originalTimeZone)
         );
-        if (!$datetime) {
+        if ($datetime === false) {
             return null;
         } else {
-            $datetime->setTimezone(new \DateTimeZone($this->localTimeZone));
+            $datetime->setTimezone(new DateTimeZone($this->localTimeZone));
             return $this->behavior->formatter->format($datetime, $this->localFormat);
         }
     }
@@ -106,16 +108,41 @@ class DateTimeAttribute extends Object
     {
         $this->_value = $value;
 
-        $datetime = \DateTime::createFromFormat(
-            $this->_localFormatPhp,
+        $datetime = static::parseDateValue(
             $value,
-            new \DateTimeZone($this->localTimeZone)
+            $this->_localFormatPhp,
+            $this->localTimeZone
         );
-        if (!$datetime) {
+
+        if ($datetime === false) {
             $this->behavior->owner->{$this->originalAttribute} = null;
         } else {
-            $datetime->setTimezone(new \DateTimeZone($this->originalTimeZone));
-            $this->behavior->owner->{$this->originalAttribute} = $datetime->format($this->_originalFormatPhp);
+            $datetime->setTimezone(new DateTimeZone($this->originalTimeZone));
+            $this->behavior->owner->{$this->originalAttribute} =
+                $datetime->format($this->originalFormat);
+        }
+    }
+
+    /**
+     * Parses date string into DateTime object
+     *
+     * @param string $value string representing date
+     * @param string $format string representing date
+     * @param string $timeZone string representing date
+     * @return boolean|DateTime DateTime object or false on failure
+     */
+    protected static function parseDateValue($value, $format, $timeZone)
+    {
+        $date = DateTime::createFromFormat($format, $value, new DateTimeZone($timeZone));
+        $errors = DateTime::getLastErrors();
+        if ($date === false || $errors['error_count'] || $errors['warning_count']) {
+            return false;
+        } else {
+            // if no time was provided in the format string set time to 0 to get a simple date timestamp
+            if (strpbrk($format, 'HhGgis') === false) {
+                $date->setTime(0, 0, 0);
+            }
+            return $date;
         }
     }
 }
