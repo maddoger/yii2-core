@@ -22,12 +22,12 @@ class m141012_090751_core_config extends Migration
             'updated_by' => Schema::TYPE_INTEGER,
         ], $tableOptions);
 
-        $this->addPrimaryKey('pk', '{{%core_config}}', 'class');
+        $this->addPrimaryKey($this->db->tablePrefix .'core_config_pk', '{{%core_config}}', 'class');
     }
 
     public function safeDown()
     {
-        $this->dropPrimaryKey('PRIMARY', '{{%core_config}}');
+        $this->dropPrimaryKey($this->db->tablePrefix .'core_config_pk', '{{%core_config}}');
         $this->dropTable('{{%core_config}}');
     }
 }

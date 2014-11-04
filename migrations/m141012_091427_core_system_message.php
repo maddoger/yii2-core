@@ -23,12 +23,12 @@ class m141012_091427_core_system_message extends Migration
             'created_by' => Schema::TYPE_INTEGER,
         ], $tableOptions);
 
-        $this->createIndex('created_at_ix', '{{%core_system_message}}', 'created_at');
+        $this->createIndex($this->db->tablePrefix .'core_system_message_created_at_ix', '{{%core_system_message}}', 'created_at');
     }
 
     public function safeDown()
     {
-        $this->dropIndex('created_at_ix', '{{%core_system_message}}');
+        $this->dropIndex($this->db->tablePrefix .'core_system_message_created_at_ix', '{{%core_system_message}}');
         $this->dropTable('{{%core_system_message}}');
     }
 }
