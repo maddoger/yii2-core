@@ -6,7 +6,6 @@
 
 namespace maddoger\core\config;
 
-use maddoger\core\models\Config;
 use Yii;
 use yii\base\Behavior;
 use yii\log\Logger;

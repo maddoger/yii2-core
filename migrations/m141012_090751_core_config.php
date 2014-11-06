@@ -15,7 +15,7 @@ class m141012_090751_core_config extends Migration
 
         $this->createTable('{{%core_config}}', [
             'class' => Schema::TYPE_STRING . ' NOT NULL',
-            'data' => Schema::TYPE_STRING . ' NOT NULL',
+            'data' => Schema::TYPE_TEXT . ' NOT NULL',
             'created_at' => Schema::TYPE_INTEGER,
             'created_by' => Schema::TYPE_INTEGER,
             'updated_at' => Schema::TYPE_INTEGER,

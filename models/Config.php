@@ -79,12 +79,17 @@ class Config extends \yii\db\ActiveRecord
     /**
      * Get config by object class
      * @param string $class
+     * @param int $cacheDuration seconds
      * @return mixed
      */
-    public static function getConfig($class)
+    public static function getConfig($class, $cacheDuration=60)
     {
-        $model = static::findOne($class);
+        $model = Yii::$app->cache->get($class);
+        if (!$model || $cacheDuration===false) {
+            $model = static::findOne($class);
+        }
         if ($model) {
+            Yii::$app->cache->set($class, $model, $cacheDuration);
             return $model->data;
         } else {
             return null;
@@ -105,7 +110,9 @@ class Config extends \yii\db\ActiveRecord
             $model->class = $class;
         }
         $model->data = $data;
-        return $model->save();
+        $res = $model->save();
+        Yii::$app->cache->delete($class);
+        return $res;
     }
 
     /**
