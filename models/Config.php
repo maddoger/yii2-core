@@ -89,7 +89,9 @@ class Config extends \yii\db\ActiveRecord
             $model = static::findOne($class);
         }
         if ($model) {
-            Yii::$app->cache->set($class, $model, $cacheDuration);
+            if ($cacheDuration !== false) {
+                Yii::$app->cache->set($class, $model, $cacheDuration);
+            }
             return $model->data;
         } else {
             return null;

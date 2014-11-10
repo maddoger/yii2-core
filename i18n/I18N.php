@@ -79,4 +79,12 @@ class I18N extends \yii\i18n\I18N
         $map = ArrayHelper::index(static::getAvailableLanguages(), 'locale');
         return isset($map[$locale]) ? $map[$locale] : null;
     }
+
+    /**
+     * @return array Locale by name
+     */
+    public static function getAvailableLanguagesList()
+    {
+        return ArrayHelper::map(static::getAvailableLanguages(), 'locale', 'name');
+    }
 }
