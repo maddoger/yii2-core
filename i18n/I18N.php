@@ -7,6 +7,7 @@
 namespace maddoger\core\i18n;
 use Yii;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Url;
 
 /**
  * I18N Component for languages info
@@ -33,13 +34,35 @@ class I18N extends \yii\i18n\I18N
     public $availableLanguages;
 
     /**
+     * @var string Template for URL with language.
+     *
+     * Available placeholders:
+     * {languageSlug} - slug of language `en_US`
+     * {languageLocale} - locale of language `ru_RU`
+     * {slug} - page url
+     */
+    public $languageUrlTemplate = '@frontendUrl/{languageSlug}/{slug}';
+
+    /**
+     * @return null|static
+     */
+    public static function getInstance()
+    {
+        if (Yii::$app->i18n instanceof I18N) {
+            return Yii::$app->i18n;
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * @return array
      */
     public static function getAvailableLanguages()
     {
         $availableLanguages = null;
-        if (Yii::$app->i18n instanceof I18N) {
-            $availableLanguages = Yii::$app->i18n->availableLanguages;
+        if ($instance = static::getInstance()) {
+            $availableLanguages = $instance->availableLanguages;
         }
         if (!$availableLanguages) {
             $availableLanguages = [[
@@ -86,5 +109,33 @@ class I18N extends \yii\i18n\I18N
     public static function getAvailableLanguagesList()
     {
         return ArrayHelper::map(static::getAvailableLanguages(), 'locale', 'name');
+    }
+
+    /**
+     * @param $slug
+     * @param null $locale
+     * @param bool $forceLanguage
+     * @return string
+     */
+    public static function getFrontendUrl($slug, $locale=null, $forceLanguage = false)
+    {
+        if ($instance = static::getInstance()) {
+
+            if (!$locale) {
+                $locale = Yii::$app->language;
+            }
+            $language = static::getLanguageByLocale($locale);
+
+            $languages = static::getAvailableLanguages();
+            if (count($languages)>1 || $forceLanguage) {
+                $url = strtr($instance->languageUrlTemplate, [
+                    'slug' => $slug,
+                    'languageLocale' => $language['locale'],
+                    'languageSlug' => $language['slug'],
+                ]);
+                return Url::to($url);
+            }
+        }
+        return Url::to('@frontendUrl/'.$slug);
     }
 }
