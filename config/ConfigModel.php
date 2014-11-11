@@ -20,9 +20,23 @@ use yii\base\Model;
  */
 class ConfigModel extends Model
 {
+    /**
+     * @var string
+     */
     public $containerClass = 'maddoger\core\models\Config';
 
+    /**
+     * @var
+     */
     public $objectClass;
+
+    /**
+     * @return array
+     */
+    public function __sleep()
+    {
+        return $this->attributes();
+    }
 
     /**
      * Save config

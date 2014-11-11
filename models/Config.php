@@ -77,6 +77,19 @@ class Config extends \yii\db\ActiveRecord
     }
 
     /**
+     * @inheritdoc
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        if ($this->data) {
+            $this->data = @unserialize($this->data);
+        } else {
+            $this->data = null;
+        }
+    }
+
+    /**
      * Get config by object class
      * @param string $class
      * @param int $cacheDuration seconds
