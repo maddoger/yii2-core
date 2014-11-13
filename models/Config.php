@@ -69,7 +69,11 @@ class Config extends \yii\db\ActiveRecord
     public function beforeSave($insert)
     {
         if ($this->data) {
-            $this->data = @serialize($this->data);
+            try {
+                $this->data = serialize($this->data);
+            } catch (\Exception $e) {
+                $this->data = null;
+            }
         } else {
             $this->data = null;
         }
@@ -83,7 +87,11 @@ class Config extends \yii\db\ActiveRecord
     {
         parent::afterSave($insert, $changedAttributes);
         if ($this->data) {
-            $this->data = @unserialize($this->data);
+            try {
+                $this->data = unserialize($this->data);
+            } catch (\Exception $e) {
+                $this->data = null;
+            }
         } else {
             $this->data = null;
         }
