@@ -84,6 +84,19 @@ class I18N extends \yii\i18n\I18N
     }
 
     /**
+     * @return string
+     */
+    public static function getCurrentLanguageSlug()
+    {
+        $currentLanguage = static::getCurrentLanguage();
+        if ($currentLanguage) {
+            return $currentLanguage['slug'];
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * @param $slug
      * @return null
      */
