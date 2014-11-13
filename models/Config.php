@@ -56,7 +56,11 @@ class Config extends \yii\db\ActiveRecord
     public function afterFind()
     {
         if ($this->data) {
-            $this->data = @unserialize($this->data);
+            try {
+                $this->data = unserialize($this->data);
+            } catch (\Exception $e) {
+                $this->data = null;
+            }
         } else {
             $this->data = null;
         }
