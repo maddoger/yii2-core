@@ -26,6 +26,11 @@ abstract class BaseSearchSource extends Component
     public $label = 'label';
 
     /**
+     * @var string
+     */
+    public $labelPrefix = '';
+
+    /**
      * @var array|string|\Closure Url route, or url attribute name (string) or Closure returning url value
      */
     public $url;
@@ -34,6 +39,11 @@ abstract class BaseSearchSource extends Component
      * @var string[]
      */
     public $searchAttributes;
+
+    /**
+     * @var array
+     */
+    public $additionalAttributes;
 
     /**
      * @throws InvalidParamException
@@ -64,14 +74,17 @@ abstract class BaseSearchSource extends Component
         $url = $this->url;
 
         foreach ($dataProvider->getModels() as $model) {
+
+            $item = [];
+
             if (is_string($label)) {
-                $model['label'] = $model[$label];
+                $item['label'] = $this->labelPrefix.$model[$label];
             } elseif ($label instanceof \Closure) {
-                $model['label'] = $label($model);
+                $item['label'] = $this->labelPrefix.$label($model);
             }
 
             if (is_string($url)) {
-                $model['url'] = Url::to($model[$url]);
+                $item['url'] = Url::to($model[$url]);
             } elseif (is_array($url)){
                 $u = $url;
                 foreach ($url as $key=>$value) {
@@ -79,12 +92,17 @@ abstract class BaseSearchSource extends Component
                         $u[$key] = $model[$key];
                     }
                 }
-                $model['url'] = Url::to($u);
+                $item['url'] = Url::to($u);
             } elseif ($url instanceof \Closure) {
-                $model['url'] = $url($model);
+                $item['url'] = $url($model);
             }
 
-            $res[] = $model;
+            if ($this->additionalAttributes ) {
+                foreach ($this->additionalAttributes as $attribute) {
+                    $item[$attribute] = $model[$attribute];
+                }
+            }
+            $res[] = $item;
         }
 
         return $res;
