@@ -111,4 +111,12 @@ class BackendModule extends BaseModule
     {
         return null;
     }
+
+    /**
+     * @return array
+     */
+    public function getSearchSources()
+    {
+        return null;
+    }
 }
