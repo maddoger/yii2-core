@@ -8,10 +8,8 @@
             "email": "maddoger@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
-        "php": ">=5.4.0",
-        "yiisoft/yii2": "*"
+        "yiisoft/yii2": "2.0.*"
     },
     "autoload": {
         "psr-4": {
