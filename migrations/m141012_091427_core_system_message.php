@@ -15,10 +15,10 @@ class m141012_091427_core_system_message extends Migration
 
         $this->createTable('{{%core_system_message}}', [
             'id' => Schema::TYPE_BIGPK,
-            'type' => Schema::TYPE_SMALLINT,
+            'type' => Schema::TYPE_STRING.'(10)',
             'title' => Schema::TYPE_STRING . ' NOT NULL',
             'message' => Schema::TYPE_STRING,
-            'data' => Schema::TYPE_STRING,
+            'data' => Schema::TYPE_TEXT,
             'created_at' => Schema::TYPE_INTEGER . ' NOT NULL',
             'created_by' => Schema::TYPE_INTEGER,
         ], $tableOptions);
