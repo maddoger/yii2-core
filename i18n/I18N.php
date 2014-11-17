@@ -125,6 +125,17 @@ class I18N extends \yii\i18n\I18N
     }
 
     /**
+     * @return array|null return preferred language array
+     */
+    public static function getPreferredLanguage()
+    {
+        $locale = Yii::$app->request->getPreferredLanguage(
+            ArrayHelper::getColumn(static::getAvailableLanguages(), 'locale', false)
+        );
+        return static::getLanguageByLocale($locale);
+    }
+
+    /**
      * @param $slug
      * @param null $locale
      * @param bool $forceLanguage
