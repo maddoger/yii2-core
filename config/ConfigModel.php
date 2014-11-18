@@ -66,6 +66,12 @@ class ConfigModel extends Model
             $obj->objectClass = $objectClass;
             $obj->containerClass = $containerClass;
         }
+        //Set default values
+        foreach ($defaults as $key=>$value) {
+            if (!$obj->{$key} || empty($obj->{$key})) {
+                $obj->{$key} = $value;
+            }
+        }
         return $obj;
     }
 }
