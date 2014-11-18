@@ -258,7 +258,7 @@ class TranslatableBehavior extends Behavior
      */
     public function getTranslation($language = null)
     {
-        if ($language === null) {
+        if (!$language) {
             $language = $this->getLanguage();
         }
 
