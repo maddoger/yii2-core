@@ -56,7 +56,7 @@ class DateTimeBehavior extends Behavior
     /**
      * @var array
      */
-    public $attributeConfig = ['class' => 'app\components\datetime\DateTimeAttribute'];
+    public $attributeConfig = ['class' => '\maddoger\core\datetime\DateTimeAttribute'];
 
     /**
      * @var string
