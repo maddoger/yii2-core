@@ -49,6 +49,11 @@ class TranslatableBehavior extends Behavior
     public $translationAttributes = [];
 
     /**
+     * @var array if no one of this attributes is set, translation will be delete (without validation)
+     */
+    public $requiredAttributes;
+
+    /**
      * @var ActiveRecord[] the models holding the translations.
      */
     private $_models = [];
@@ -210,6 +215,24 @@ class TranslatableBehavior extends Behavior
         /** @var \yii\db\ActiveQuery $relation */
         $relation = $this->owner->getRelation($this->relation);
         $model->{key($relation->link)} = $this->owner->getPrimaryKey();
+
+        //Is translation valid?
+        if (is_array($this->requiredAttributes)) {
+            $valid = false;
+            foreach ($this->requiredAttributes as $attribute) {
+                if ($model->{$attribute} && !empty($model->{$attribute})) {
+                    $valid = true;
+                    break;
+                }
+            }
+            if (!$valid) {
+                if (!$model->isNewRecord) {
+                    $model->delete();
+                }
+                return false;
+            }
+        }
+
         return $model->save();
     }
 
@@ -228,8 +251,26 @@ class TranslatableBehavior extends Behavior
             /** @var \yii\db\ActiveQuery $relation */
             $relation = $this->owner->getRelation($this->relation);
             $model->{key($relation->link)} = $this->owner->getPrimaryKey();
-            if (!$model->save())
-            {
+
+            //Is translation valid?
+            if (is_array($this->requiredAttributes)) {
+                $valid = false;
+                foreach ($this->requiredAttributes as $attribute) {
+                    if ($model->{$attribute} && !empty($model->{$attribute})) {
+                        $valid = true;
+                        break;
+                    }
+                }
+                if (!$valid) {
+                    if (!$model->isNewRecord) {
+                        $model->delete();
+                    }
+                    $res = false;
+                    continue;
+                }
+            }
+
+            if (!$model->save()) {
                 $res = false;
             }
         }
@@ -288,6 +329,31 @@ class TranslatableBehavior extends Behavior
         foreach ($languages as $language) {
             $this->loadTranslation($language);
         }
+    }
+
+    /**
+     * @param $data
+     * @param null $languages
+     * @param null $formName
+     * @param null $translationFormName
+     * @return bool
+     */
+    public function loadWithTranslations($data, $languages = null, $formName = null, $translationFormName = null)
+    {
+        if ($this->owner->load($data, $formName)) {
+
+            if (!$languages) {
+                $languages = I18N::getAvailableLanguages();
+            }
+            $validate = true;
+            foreach ($languages as $language) {
+                $modelI18n = static::getTranslation($language['locale']);
+                $validate = $validate && $modelI18n->load($data, $translationFormName);
+
+            }
+            return $validate;
+        }
+        return false;
     }
 
     /**
