@@ -117,11 +117,19 @@ class I18N extends \yii\i18n\I18N
     }
 
     /**
-     * @return array Locale by name
+     * @return array Array of languages: locale => name
      */
     public static function getAvailableLanguagesList()
     {
         return ArrayHelper::map(static::getAvailableLanguages(), 'locale', 'name');
+    }
+
+    /**
+     * @return array Array of locales
+     */
+    public static function getAvailableLocalesList()
+    {
+        return ArrayHelper::getColumn(static::getAvailableLanguages(), 'locale');
     }
 
     /**

@@ -8,10 +8,12 @@ namespace maddoger\core\i18n;
 
 use Yii;
 use yii\base\Behavior;
+use yii\base\InvalidParamException;
 use yii\db\ActiveRecord;
 
 /**
  * TranslatableBehavior
+ *
  *
  * @author Antonio Ramirez <amigo.cobos@gmail.com>
  * @author Vitaliy Syrchikov <maddoger@gmail.com>
@@ -49,7 +51,7 @@ class TranslatableBehavior extends Behavior
     public $translationAttributes = [];
 
     /**
-     * @var array if no one of this attributes is set, translation will be delete (without validation)
+     * @var array translation is active if at least one of this attributes is set.
      */
     public $requiredAttributes;
 
@@ -62,7 +64,6 @@ class TranslatableBehavior extends Behavior
      * @var string the language selected.
      */
     private $_language;
-
 
     /**
      * @inheritdoc
@@ -152,6 +153,26 @@ class TranslatableBehavior extends Behavior
     }
 
     /**
+     * @param string $attribute
+     * @return mixed
+     */
+    public function getTranslationAttribute($attribute)
+    {
+        return $this->{$attribute};
+    }
+
+    /**
+     * @param string $attribute
+     * @param mixed $value
+     */
+    public function setTranslationAttribute($attribute, $value)
+    {
+        $this->{$attribute} = $value;
+    }
+
+
+
+    /**
      * Sets current model's language
      *
      * @param $value
@@ -175,30 +196,17 @@ class TranslatableBehavior extends Behavior
             if ($this->defaultLanguageAttribute) {
                 $this->_language = $this->owner->{$this->defaultLanguageAttribute};
             }
-            //var_dump($this->owner->{$this->defaultLanguageAttribute}, $this->_language);
+            //Try find best language from available
+            $availableLanguages = $this->getAvailableLanguages();
+            if ($availableLanguages && Yii::$app->has('request')) {
+                $this->_language = Yii::$app->request->getPreferredLanguage($availableLanguages);
+            }
+            //Use application language, because we don`t have any translation yet
             if (!$this->_language) {
                 $this->_language = Yii::$app->language;
             }
         }
         return $this->_language;
-    }
-
-    /**
-     * @param string $attribute
-     * @return mixed
-     */
-    public function getTranslationAttribute($attribute)
-    {
-        return $this->{$attribute};
-    }
-
-    /**
-     * @param string $attribute
-     * @param mixed $value
-     */
-    public function setTranslationAttribute($attribute, $value)
-    {
-        $this->{$attribute} = $value;
     }
 
     /**
@@ -216,21 +224,11 @@ class TranslatableBehavior extends Behavior
         $relation = $this->owner->getRelation($this->relation);
         $model->{key($relation->link)} = $this->owner->getPrimaryKey();
 
+
         //Is translation valid?
-        if (is_array($this->requiredAttributes)) {
-            $valid = false;
-            foreach ($this->requiredAttributes as $attribute) {
-                if ($model->{$attribute} && !empty($model->{$attribute})) {
-                    $valid = true;
-                    break;
-                }
-            }
-            if (!$valid) {
-                if (!$model->isNewRecord) {
-                    $model->delete();
-                }
-                return false;
-            }
+        if (!$this->isTranslationActive($model)) {
+            $this->deleteTranslation($model);
+            return false;
         }
 
         return $model->save();
@@ -253,21 +251,9 @@ class TranslatableBehavior extends Behavior
             $model->{key($relation->link)} = $this->owner->getPrimaryKey();
 
             //Is translation valid?
-            if (is_array($this->requiredAttributes)) {
-                $valid = false;
-                foreach ($this->requiredAttributes as $attribute) {
-                    if ($model->{$attribute} && !empty($model->{$attribute})) {
-                        $valid = true;
-                        break;
-                    }
-                }
-                if (!$valid) {
-                    if (!$model->isNewRecord) {
-                        $model->delete();
-                    }
-                    $res = false;
-                    continue;
-                }
+            if (!$this->isTranslationActive($model)) {
+                $this->deleteTranslation($model);
+                continue;
             }
 
             if (!$model->save()) {
@@ -287,7 +273,7 @@ class TranslatableBehavior extends Behavior
     public function hasTranslation($language = null)
     {
         $translation = $this->getTranslation($language);
-        return $translation && !$translation->isNewRecord;
+        return $translation && $this->isTranslationActive($translation);
     }
 
     /**
@@ -302,56 +288,102 @@ class TranslatableBehavior extends Behavior
         if (!$language) {
             $language = $this->getLanguage();
         }
-
         if (!isset($this->_models[$language])) {
             $this->_models[$language] = $this->loadTranslation($language);
         }
-
         return $this->_models[$language];
     }
 
     /**
-     * Loads all specified languages. For example:
-     *
-     * ```
-     * $model->loadTranslations("en-US");
-     *
-     * $model->loadTranslations(["en-US", "es-ES"]);
-     *
-     * ```
-     *
-     * @param string|array $languages
+     * Returns array of available languages.
+     * Populated models will be used if its set, otherwise query will be used.
+     * @return array
      */
-    public function loadTranslations($languages)
+    public function getAvailableLanguages()
     {
-        $languages = (array)$languages;
-
-        foreach ($languages as $language) {
-            $this->loadTranslation($language);
+        if (!empty($this->_models)) {
+            return array_keys($this->_models);
+        } else {
+            /** @var \yii\db\ActiveQuery $relation */
+            $relation = $this->owner->getRelation($this->relation);
+            /** @var ActiveRecord $class */
+            $class = $relation->modelClass;
+            if ($this->owner->getPrimarykey()) {
+                return $class::find()->select([$this->languageAttribute])->where(
+                    [key($relation->link) => $this->owner->getPrimarykey()]
+                )->orderBy([$this->languageAttribute => SORT_ASC])->column($this->owner->getDb());
+            }
         }
+        return null;
     }
 
     /**
+     * Load owner model and translation models from data.
      * @param $data
-     * @param null $languages
+     * @param null $languages array of languages for loading
      * @param null $formName
      * @param null $translationFormName
      * @return bool
      */
-    public function loadWithTranslations($data, $languages = null, $formName = null, $translationFormName = null)
+    public function loadWithTranslations($data, $languages, $formName = null, $translationFormName = null)
     {
         if ($this->owner->load($data, $formName)) {
-
             if (!$languages) {
-                $languages = I18N::getAvailableLanguages();
+                throw new InvalidParamException('Languages must be set.');
             }
-            $validate = true;
             foreach ($languages as $language) {
-                $modelI18n = static::getTranslation($language['locale']);
-                $validate = $validate && $modelI18n->load($data, $translationFormName);
-
+                $modelI18n = static::getTranslation($language);
+                $modelI18n->load($data, $translationFormName);
             }
-            return $validate;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * At least one translation must be valid.
+     * Each translation must be active (with one of required attributes) and validates itself.
+     * @return bool
+     */
+    public function validateTranslations()
+    {
+        $valid = !empty($this->_models);
+        $activeTranslations = 0;
+        foreach ($this->_models as $model) {
+            if ($this->isTranslationActive($model)) {
+                $activeTranslations++;
+                $valid = $valid && $model->validate();
+            }
+        }
+        return $activeTranslations>0 && $valid;
+    }
+
+    /**
+     * @return \yii\db\ActiveRecord[]
+     */
+    public function getTranslationModels()
+    {
+        return $this->_models;
+    }
+
+    /**
+     * Translation is active or just empty model?
+     * @param $model
+     * @return bool
+     */
+    private function isTranslationActive($model)
+    {
+        if (!$model) {
+            return false;
+        }
+        if (is_array($this->requiredAttributes) && !empty($this->requiredAttributes)) {
+            foreach ($this->requiredAttributes as $attribute) {
+                if ($model->{$attribute} && !empty($model->{$attribute})) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
         }
         return false;
     }
@@ -380,7 +412,6 @@ class TranslatableBehavior extends Behavior
             $translation->{key($relation->link)} = $this->owner->getPrimaryKey();
             $translation->{$this->languageAttribute} = $language;
         }
-
         return $translation;
     }
 
@@ -401,5 +432,18 @@ class TranslatableBehavior extends Behavior
                 $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
             }
         }
+    }
+
+    /**
+     * @param \yii\db\ActiveRecord $model
+     * @return bool
+     */
+    private function deleteTranslation($model)
+    {
+        if (!$model->isNewRecord) {
+            $model->delete();
+            unset($this->_models[$model->getAttribute($this->languageAttribute)]);
+        }
+        return true;
     }
 }
