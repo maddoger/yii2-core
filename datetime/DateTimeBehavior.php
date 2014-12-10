@@ -69,6 +69,11 @@ class DateTimeBehavior extends Behavior
     public $performValidation = true;
 
     /**
+     * @var array
+     */
+    public $validatorOptions = [];
+
+    /**
      * @var DateTimeAttribute[]
      */
     public $attributeValues = [];
@@ -176,11 +181,13 @@ class DateTimeBehavior extends Behavior
     {
         foreach ($this->attributeValues as $name => $value) {
 
-            $validator = Yii::createObject([
+            $options = ArrayHelper::merge([
                 'class' => DateValidator::className(),
                 'format' => $value->localFormat[1],
-            ]);
-            $validator->validateAttribute($this->owner, $value->localAttribute);
+            ], $this->validatorOptions);
+
+            $validator = Yii::createObject($options);
+            $validator->validateAttributes($this->owner, [$value->localAttribute]);
         }
     }
 
