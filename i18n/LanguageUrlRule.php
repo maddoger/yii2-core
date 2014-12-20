@@ -4,9 +4,8 @@
  * @link http://syrchikov.name
  */
 
-namespace common\components;
+namespace maddoger\core\i18n;
 
-use maddoger\core\i18n\I18N;
 use Yii;
 use yii\web\UrlRule;
 
@@ -55,8 +54,7 @@ class LanguageUrlRule extends UrlRule
             if ($language) {
                 Yii::$app->language = $language['locale'];
                 Yii::trace("Change language by URL to: {$language['locale']}", __METHOD__);
-            }
-            elseif ($this->defaultLanguage !== null) {
+            } elseif ($this->defaultLanguage !== null) {
                 Yii::$app->language = $this->defaultLanguage;
             }
         }
