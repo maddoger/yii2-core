@@ -198,10 +198,12 @@ class TranslatableBehavior extends Behavior
             }
             //Try find best language from available
             $availableLanguages = $this->getAvailableLanguages();
-            if (in_array(Yii::$app->language, $availableLanguages)) {
-                $this->_language = Yii::$app->language;
-            } elseif ($availableLanguages && Yii::$app->has('request')) {
-                $this->_language = Yii::$app->request->getPreferredLanguage($availableLanguages);
+            if ($availableLanguages) {
+                if (in_array(Yii::$app->language, $availableLanguages)) {
+                    $this->_language = Yii::$app->language;
+                } elseif (Yii::$app->has('request')) {
+                    $this->_language = Yii::$app->request->getPreferredLanguage($availableLanguages);
+                }
             }
             //Use application language, because we don`t have any translation yet
             if (!$this->_language) {
