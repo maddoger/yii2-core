@@ -10,6 +10,7 @@ use Yii;
 use yii\base\Behavior;
 use yii\base\InvalidParamException;
 use yii\db\ActiveRecord;
+use yii\log\Logger;
 
 /**
  * TranslatableBehavior
@@ -132,7 +133,7 @@ class TranslatableBehavior extends Behavior
      */
     public function afterFind($event)
     {
-        $this->populateTranslations();
+        $this->loadTranslations();
         $this->getTranslation($this->getLanguage());
     }
 
@@ -170,8 +171,6 @@ class TranslatableBehavior extends Behavior
         $this->{$attribute} = $value;
     }
 
-
-
     /**
      * Sets current model's language
      *
@@ -181,7 +180,7 @@ class TranslatableBehavior extends Behavior
     {
         //$value = strtolower($value);
         if (!isset($this->_models[$value])) {
-            $this->_models[$value] = $this->loadTranslation($value);
+            $this->_models[$value] = $this->getNewTranslation($value);
         }
         $this->_language = $value;
     }
@@ -293,7 +292,7 @@ class TranslatableBehavior extends Behavior
             $language = $this->getLanguage();
         }
         if (!isset($this->_models[$language])) {
-            $this->_models[$language] = $this->loadTranslation($language);
+            $this->_models[$language] = $this->getNewTranslation($language);
         }
         return $this->_models[$language];
     }
@@ -307,16 +306,6 @@ class TranslatableBehavior extends Behavior
     {
         if (!empty($this->_models)) {
             return array_keys($this->_models);
-        } else {
-            /** @var \yii\db\ActiveQuery $relation */
-            $relation = $this->owner->getRelation($this->relation);
-            /** @var ActiveRecord $class */
-            $class = $relation->modelClass;
-            if ($this->owner->getPrimarykey()) {
-                return $class::find()->select([$this->languageAttribute])->where(
-                    [key($relation->link) => $this->owner->getPrimarykey()]
-                )->orderBy([$this->languageAttribute => SORT_ASC])->column($this->owner->getDb());
-            }
         }
         return null;
     }
@@ -399,43 +388,39 @@ class TranslatableBehavior extends Behavior
      *
      * @return null|\yii\db\ActiveQuery|static
      */
-    private function loadTranslation($language)
+    private function getNewTranslation($language)
     {
         $translation = null;
         /** @var \yii\db\ActiveQuery $relation */
         $relation = $this->owner->getRelation($this->relation);
         /** @var ActiveRecord $class */
         $class = $relation->modelClass;
-        if ($this->owner->getPrimarykey()) {
-            $translation = $class::findOne(
-                [$this->languageAttribute => $language, key($relation->link) => $this->owner->getPrimarykey()]
-            );
-        }
-        if ($translation === null) {
-            $translation = new $class;
-            $translation->{key($relation->link)} = $this->owner->getPrimaryKey();
-            $translation->{$this->languageAttribute} = $language;
-        }
+        //if ($translation === null) {
+        $translation = new $class;
+        $translation->{key($relation->link)} = $this->owner->getPrimaryKey();
+        $translation->{$this->languageAttribute} = $language;
+        //}
         return $translation;
     }
 
     /**
-     * Populates already loaded translations
+     * Loads relation to models
+     * @return bool
      */
-    private function populateTranslations()
+    private function loadTranslations()
     {
-        //translations
-        $aRelated = $this->owner->getRelatedRecords();
-        if (isset($aRelated[$this->relation]) && $aRelated[$this->relation] != null) {
-            if (is_array($aRelated[$this->relation])) {
-                foreach ($aRelated[$this->relation] as $model) {
+        if ($related = $this->owner->{$this->relation}) {
+            if (is_array($related)) {
+                foreach ($related as $model) {
                     $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
                 }
             } else {
-                $model = $aRelated[$this->relation];
+                $model = $related;
                 $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
             }
+            return true;
         }
+        return false;
     }
 
     /**

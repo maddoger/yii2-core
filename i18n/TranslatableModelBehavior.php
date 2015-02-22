@@ -60,6 +60,11 @@ class TranslatableModelBehavior extends Behavior
     private $_language;
 
     /**
+     * @var array translation is active if at least one of this attributes is set.
+     */
+    public $requiredAttributes;
+
+    /**
      * Make [[$translationAttributes]] writable
      * @param string $name
      * @param mixed $value
@@ -123,6 +128,8 @@ class TranslatableModelBehavior extends Behavior
         $this->_language = $value;
     }
 
+
+
     /**
      * Returns current models' language. If null, will return app's configured language.
      * @return string
@@ -133,7 +140,16 @@ class TranslatableModelBehavior extends Behavior
             if ($this->defaultLanguageAttribute) {
                 $this->_language = $this->owner->{$this->defaultLanguageAttribute};
             }
-            //var_dump($this->owner->{$this->defaultLanguageAttribute}, $this->_language);
+            //Try find best language from available
+            $availableLanguages = $this->getAvailableLanguages();
+            if ($availableLanguages) {
+                if (in_array(Yii::$app->language, $availableLanguages)) {
+                    $this->_language = Yii::$app->language;
+                } elseif (Yii::$app->has('request')) {
+                    $this->_language = Yii::$app->request->getPreferredLanguage($availableLanguages);
+                }
+            }
+            //Use application language, because we don`t have any translation yet
             if (!$this->_language) {
                 $this->_language = Yii::$app->language;
             }
@@ -169,7 +185,7 @@ class TranslatableModelBehavior extends Behavior
     public function hasTranslation($language = null)
     {
         $translation = $this->getTranslation($language);
-        return $translation && $translation->validate();
+        return $translation && $this->isTranslationActive($translation);
     }
 
     /**
@@ -193,6 +209,61 @@ class TranslatableModelBehavior extends Behavior
     }
 
     /**
+     * Returns array of available languages.
+     * Populated models will be used if its set, otherwise query will be used.
+     * @return array
+     */
+    public function getAvailableLanguages()
+    {
+        if (!empty($this->owner->{$this->translationsAttribute})) {
+            return array_keys($this->owner->{$this->translationsAttribute});
+        }
+        return null;
+    }
+
+
+    /**
+     * Load owner model and translation models from data.
+     * @param $data
+     * @param null $languages array of languages for loading
+     * @param null $formName
+     * @param null $translationFormName
+     * @return bool
+     */
+    public function loadWithTranslations($data, $languages, $formName = null, $translationFormName = null)
+    {
+        if ($this->owner->load($data, $formName)) {
+            if (!$languages) {
+                throw new InvalidParamException('Languages must be set.');
+            }
+            foreach ($languages as $language) {
+                $modelI18n = static::getTranslation($language);
+                $modelI18n->load($data, $translationFormName);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * At least one translation must be valid.
+     * Each translation must be active (with one of required attributes) and validates itself.
+     * @return bool
+     */
+    public function validateTranslations()
+    {
+        $valid = !empty($this->owner->{$this->translationsAttribute});
+        $activeTranslations = 0;
+        foreach ($this->owner->{$this->translationsAttribute} as $model) {
+            if ($this->isTranslationActive($model)) {
+                $activeTranslations++;
+                $valid = $valid && $model->validate();
+            }
+        }
+        return $activeTranslations>0 && $valid;
+    }
+
+    /**
      * Loads all specified languages. For example:
      *
      * ```
@@ -211,6 +282,29 @@ class TranslatableModelBehavior extends Behavior
         foreach ($languages as $language) {
             $this->loadTranslation($language);
         }
+    }
+
+
+    /**
+     * Translation is active or just empty model?
+     * @param $model
+     * @return bool
+     */
+    private function isTranslationActive($model)
+    {
+        if (!$model) {
+            return false;
+        }
+        if (is_array($this->requiredAttributes) && !empty($this->requiredAttributes)) {
+            foreach ($this->requiredAttributes as $attribute) {
+                if ($model->{$attribute} && !empty($model->{$attribute})) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
+        }
+        return false;
     }
 
     /**
