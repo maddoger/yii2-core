@@ -412,11 +412,15 @@ class TranslatableBehavior extends Behavior
         if ($related = $this->owner->{$this->relation}) {
             if (is_array($related)) {
                 foreach ($related as $model) {
-                    $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
+                    if ($model) {
+                        $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
+                    }
                 }
             } else {
                 $model = $related;
-                $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
+                if ($model) {
+                    $this->_models[$model->getAttribute($this->languageAttribute)] = $model;
+                }
             }
             return true;
         }
